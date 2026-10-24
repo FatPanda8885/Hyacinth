@@ -64,11 +64,32 @@ function onDragStart(index: number, event: DragEvent): void {
   if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
 }
 
-function onDragOver(index: number, event: DragEvent): void {
+/**
+ * 容器级 dragover：用光标 Y 对「布局行边界」求插入行。
+ * 必须用 offsetTop（布局值，不受 FLIP transform 影响）而不是命中测试——
+ * 若依赖 event.target，动画中的行还在位移，交界处会 A/B 来回换序（振荡）。
+ */
+function onDragOverList(event: DragEvent): void {
   event.preventDefault()
-  if (dragIndex.value === null || dragIndex.value === index) return
-  replace(moveItem(links.value, dragIndex.value, index))
-  dragIndex.value = index
+  const container = event.currentTarget as HTMLElement | null
+  if (!container || dragIndex.value === null) return
+  const rows = [...container.children].filter(
+    (el): el is HTMLElement => el instanceof HTMLElement && el.classList.contains('link-row'),
+  )
+  if (rows.length === 0) return
+
+  const relY = event.clientY - container.getBoundingClientRect().top
+  // 目标行 = 中点第一次越过光标的那一行；超出末尾则停在最后一行
+  let target = rows.length - 1
+  for (let i = 0; i < rows.length; i++) {
+    if (relY < rows[i].offsetTop + rows[i].offsetHeight / 2) {
+      target = i
+      break
+    }
+  }
+  if (target === dragIndex.value) return
+  replace(moveItem(links.value, dragIndex.value, target))
+  dragIndex.value = target
 }
 
 function onDragEnd(): void {
@@ -83,13 +104,12 @@ function onDragEnd(): void {
     </p>
 
     <!-- TransitionGroup 的 FLIP 动画：换序时行平滑滑动到位，新增淡入、删除淡出 -->
-    <TransitionGroup name="reorder" tag="div" class="rows">
+    <TransitionGroup name="reorder" tag="div" class="rows" @dragover="onDragOverList($event)">
       <div
         v-for="(link, i) in links"
         :key="link.id"
         class="link-row"
         :class="{ dragging: dragIndex === i }"
-        @dragover="onDragOver(i, $event)"
       >
         <span
           class="avatar handle"
