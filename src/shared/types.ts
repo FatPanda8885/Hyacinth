@@ -47,7 +47,15 @@ export type BackgroundEffects = {
   brightness: number
 }
 
-/** 已安装插件（M4+ 使用） */
+/** 插件尺寸约束（结构同 widgets/registry 的 WidgetConstraints，避免反向依赖组件层） */
+export type PluginConstraints = {
+  minW: number
+  minH: number
+  defaultW: number
+  defaultH: number
+}
+
+/** 已安装插件（M4 内置、M5 起含市场/URL 安装的远程插件） */
 export interface InstalledPlugin {
   id: string
   name: string
@@ -55,6 +63,11 @@ export interface InstalledPlugin {
   enabled: boolean
   /** 声明的权限，如 ['storage', 'fetch:api.example.com'] */
   permissions: string[]
+  /** 远程插件的入口页面 URL（https）；内置插件留空 */
+  entryUrl?: string
+  description?: string
+  /** 远程插件自带的尺寸约束（内置插件以打包目录为准） */
+  constraints?: PluginConstraints
 }
 
 /** 整棵配置树：chrome.storage.local 里的持久化结构 */

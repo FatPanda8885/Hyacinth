@@ -1,0 +1,15 @@
+{
+  "v": 1,
+  "plugins": [
+    {
+      "id": "hyacinth-example-note",
+      "name": "随手记（示例）",
+      "description": "画布上的一张便签：点击写入一句话，保存在本地（演示 storage 权限）。",
+      "version": "0.1.0",
+      "author": "Hyacinth",
+      "entryUrl": "https://fatpanda8885.github.io/hyacinth-plugins/plugins/note/index.html",
+      "permissions": ["storage", "theme"],
+      "constraints": { "minW": 3, "minH": 2, "defaultW": 6, "defaultH": 4 }
+    }
+  ]
+}

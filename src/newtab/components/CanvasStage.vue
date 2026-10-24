@@ -20,13 +20,7 @@ import {
 } from '@/core/layout/slots'
 import { newId } from '@/shared/id'
 import type { Slot } from '@/shared/types'
-import {
-  BUNDLED_PLUGINS,
-  getPluginEntry,
-  parsePluginWidgetType,
-  pluginWidgetType,
-  type PluginCatalogEntry,
-} from '@/plugins/catalog'
+import { parsePluginWidgetType, pluginWidgetType, resolvePluginEntry } from '@/plugins/catalog'
 import { useConfigStore } from '@/stores/config'
 import { getWidget, listWidgets } from '@/widgets'
 import PluginWidget from '@/widgets/plugin/PluginWidget.vue'
@@ -53,23 +47,34 @@ const addEntries = computed<AddEntry[]>(() => {
     name: w.name,
     constraints: w.constraints,
   }))
-  const enabledPlugins = BUNDLED_PLUGINS.filter((p) =>
-    store.config.plugins.some((i) => i.id === p.id && i.enabled),
-  ).map((p: PluginCatalogEntry) => ({
-    type: pluginWidgetType(p.id),
-    name: `${p.name} · 插件`,
-    constraints: p.constraints,
-  }))
+  // 已启用的插件（内置或市场/URL 安装的远程插件统一解析）
+  const enabledPlugins = store.config.plugins
+    .filter((p) => p.enabled)
+    .map((p) => resolvePluginEntry(p.id, p))
+    .filter((e) => e !== undefined)
+    .map((e) => ({
+      type: pluginWidgetType(e.id),
+      name: `${e.name} · 插件`,
+      constraints: e.constraints,
+    }))
   return [...builtins, ...enabledPlugins]
 })
 
-/** 槽位类型的尺寸约束（内置挂件或插件目录） */
+/** 槽位类型的尺寸约束（内置挂件或插件解析结果） */
 function constraintsOf(type: string): WidgetConstraints {
   const builtin = getWidget(type)?.constraints
   if (builtin) return builtin
   const pluginId = parsePluginWidgetType(type)
-  const plugin = pluginId ? getPluginEntry(pluginId) : undefined
-  return plugin?.constraints ?? { minW: 3, minH: 2, defaultW: 6, defaultH: 4 }
+  if (!pluginId) return { minW: 3, minH: 2, defaultW: 6, defaultH: 4 }
+  const installed = store.config.plugins.find((p) => p.id === pluginId)
+  return (
+    resolvePluginEntry(pluginId, installed)?.constraints ?? {
+      minW: 3,
+      minH: 2,
+      defaultW: 6,
+      defaultH: 4,
+    }
+  )
 }
 
 /** 舞台实际尺寸（ResizeObserver 维护），用于 px ↔ 网格单位换算 */
