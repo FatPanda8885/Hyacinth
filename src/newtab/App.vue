@@ -1,22 +1,21 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { onMounted } from 'vue'
 
 import { openOptionsPage } from '@/platform/runtime'
 import { useConfigStore } from '@/stores/config'
-import { themeBackgroundStyle } from '@/themes/apply'
+import BackgroundLayer from '@/themes/BackgroundLayer.vue'
 import { useTheme } from '@/themes/useTheme'
 
 import CanvasStage from './components/CanvasStage.vue'
 
 const store = useConfigStore()
 const theme = useTheme()
-const bgStyle = computed(() => themeBackgroundStyle(theme.value.background))
 
 onMounted(() => void store.init())
 </script>
 
 <template>
-  <div class="bg" :style="bgStyle" aria-hidden="true"></div>
+  <BackgroundLayer :background="theme.background" viewport />
 
   <CanvasStage />
 
@@ -45,13 +44,6 @@ onMounted(() => void store.init())
 </template>
 
 <style scoped>
-.bg {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  transition: background 0.4s ease;
-}
-
 .settings {
   position: fixed;
   right: 18px;

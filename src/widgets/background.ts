@@ -7,8 +7,23 @@ export type BackgroundType = 'gradient' | 'color' | 'image'
 
 export type BackgroundConfig = {
   type: BackgroundType
-  /** 渐变/颜色为 CSS 值；图片为 URL */
+  /** 渐变/颜色为 CSS 值；图片为 http(s) URL 或本地资产引用 asset:<id> */
   value: string
+}
+
+/** 本地资产引用前缀：图片存 IndexedDB（platform/assetStore），配置只存引用 */
+const ASSET_PREFIX = 'asset:'
+
+export function isAssetRef(value: string): boolean {
+  return value.startsWith(ASSET_PREFIX) && value.length > ASSET_PREFIX.length
+}
+
+export function makeAssetRef(id: string): string {
+  return `${ASSET_PREFIX}${id}`
+}
+
+export function assetRefToId(value: string): string {
+  return value.slice(ASSET_PREFIX.length)
 }
 
 export type BackgroundPreset = {

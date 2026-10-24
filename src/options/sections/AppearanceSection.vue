@@ -2,15 +2,21 @@
 import { computed, ref } from 'vue'
 
 import { useConfigStore } from '@/stores/config'
+import { deleteAsset, putAsset } from '@/platform/assetStore'
 import type { ThemeBackground, ThemeDefinition } from '@/shared/types'
 import { BUILTIN_THEMES } from '@/themes/builtin'
 import { exportTheme, findTheme, validateTheme } from '@/themes/apply'
+import BackgroundLayer from '@/themes/BackgroundLayer.vue'
 import { useTheme } from '@/themes/useTheme'
+import { normalizeUrl } from '@/widgets/shortcuts'
 import {
   type BackgroundType,
   PRESET_COLORS,
   PRESET_GRADIENTS,
+  assetRefToId,
   backgroundStyleFor,
+  isAssetRef,
+  makeAssetRef,
 } from '@/widgets/background'
 
 const store = useConfigStore()
@@ -49,11 +55,41 @@ const typeLabels: Record<BackgroundType, string> = {
 function setType(type: BackgroundType): void {
   const value =
     type === 'gradient' ? PRESET_GRADIENTS[0].value : type === 'color' ? PRESET_COLORS[0].value : ''
-  store.setBackgroundOverride({ type, value })
+  void applyOverride({ type, value })
 }
 
 function setValue(value: string): void {
-  store.setBackgroundOverride({ type: bgValue.value.type, value })
+  void applyOverride({ type: bgValue.value.type, value })
+}
+
+/** 统一入口：换背景时回收不再被引用的本地资产 */
+async function applyOverride(next: ThemeBackground | undefined): Promise<void> {
+  const prev = store.config.theme.background
+  if (prev?.type === 'image' && isAssetRef(prev.value) && prev.value !== next?.value) {
+    await deleteAsset(assetRefToId(prev.value)).catch(() => {})
+  }
+  store.setBackgroundOverride(next)
+}
+
+async function onLocalImage(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file || !file.type.startsWith('image/')) return
+  importError.value = ''
+  try {
+    const id = await putAsset(file)
+    await applyOverride({ type: 'image', value: makeAssetRef(id) })
+  } catch {
+    importError.value = '本地图片保存失败，请重试'
+  }
+}
+
+function onUrlChange(event: Event): void {
+  const input = event.target as HTMLInputElement
+  const url = input.value.trim()
+  if (!url) return // 清空输入不动作，避免误删本地图片背景
+  void applyOverride({ type: 'image', value: normalizeUrl(url) })
 }
 
 // ---- 导入 / 导出 ----
@@ -94,8 +130,6 @@ function onImportFile(event: Event): void {
   }
   reader.readAsText(file)
 }
-
-const previewStripStyle = computed(() => backgroundStyleFor(theme.value.background))
 </script>
 
 <template>
@@ -146,12 +180,7 @@ const previewStripStyle = computed(() => backgroundStyleFor(theme.value.backgrou
         <em v-if="override" class="badge">已覆盖主题</em>
       </span>
       <div class="bg-controls">
-        <button
-          v-if="override"
-          type="button"
-          class="follow"
-          @click="store.setBackgroundOverride(undefined)"
-        >
+        <button v-if="override" type="button" class="follow" @click="applyOverride(undefined)">
           跟随主题
         </button>
         <div class="segment">
@@ -211,16 +240,24 @@ const previewStripStyle = computed(() => backgroundStyleFor(theme.value.backgrou
       </div>
     </div>
 
-    <div v-else class="row">
-      <label for="bg-url">图片 URL</label>
-      <input
-        id="bg-url"
-        class="url"
-        type="url"
-        placeholder="https://example.com/wallpaper.jpg"
-        :value="bgValue.type === 'image' ? bgValue.value : ''"
-        @change="setValue(($event.target as HTMLInputElement).value)"
-      />
+    <div v-else class="row wrap">
+      <label for="bg-url">图片背景</label>
+      <div class="io">
+        <label class="ghost-btn file">
+          选择本地图片…
+          <input type="file" accept="image/*" @change="onLocalImage" />
+        </label>
+        <input
+          id="bg-url"
+          class="url"
+          type="url"
+          :placeholder="
+            isAssetRef(bgValue.value) ? '已使用本地图片，也可输入 URL 替换' : '或输入图片 URL'
+          "
+          :value="bgValue.type === 'image' && !isAssetRef(bgValue.value) ? bgValue.value : ''"
+          @change="onUrlChange"
+        />
+      </div>
     </div>
 
     <!-- 导入导出 -->
@@ -236,7 +273,8 @@ const previewStripStyle = computed(() => backgroundStyleFor(theme.value.backgrou
     </div>
     <p v-if="importError" class="error" role="alert">{{ importError }}</p>
 
-    <div class="preview" :style="previewStripStyle" aria-hidden="true">
+    <div class="preview" aria-hidden="true">
+      <BackgroundLayer :background="theme.background" />
       <span>预览</span>
     </div>
   </div>
@@ -477,6 +515,7 @@ const previewStripStyle = computed(() => backgroundStyleFor(theme.value.backgrou
 }
 
 .preview {
+  position: relative;
   margin-top: 18px;
   height: 110px;
   border-radius: var(--hy-radius);
@@ -484,6 +523,11 @@ const previewStripStyle = computed(() => backgroundStyleFor(theme.value.backgrou
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+}
+
+.preview > span {
+  z-index: 1;
 }
 
 .preview span {

@@ -91,6 +91,11 @@ describe('validateTheme', () => {
     expect(validateTheme({ ...valid, background: { type: 'color', value: '' } }).ok).toBe(false)
   })
 
+  it('主题文件拒绝本地资产引用（无法跨设备分发）', () => {
+    const r = validateTheme({ ...valid, background: { type: 'image', value: 'asset:abc' } })
+    expect(r.ok).toBe(false)
+  })
+
   it('忽略未知字段（向前兼容）', () => {
     const r = validateTheme({ ...valid, futureField: { a: 1 } })
     expect(r.ok).toBe(true)

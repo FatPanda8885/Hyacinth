@@ -1,5 +1,5 @@
 import type { ThemeBackground, ThemeConfig, ThemeDefinition } from '@/shared/types'
-import { BACKGROUND_DEFAULTS, backgroundStyleFor } from '@/widgets/background'
+import { BACKGROUND_DEFAULTS, backgroundStyleFor, isAssetRef } from '@/widgets/background'
 
 import { BUILTIN_THEMES } from './builtin'
 
@@ -79,6 +79,10 @@ export function validateTheme(raw: unknown): ThemeValidation {
       (bg as ThemeBackground).value.length > 2048
     ) {
       return { ok: false, error: '主题背景格式不正确' }
+    }
+    // 本地资产引用只在当前设备的 IndexedDB 里有效，无法随主题文件分发
+    if ((bg as ThemeBackground).type === 'image' && isAssetRef((bg as ThemeBackground).value)) {
+      return { ok: false, error: '主题文件中的图片背景请使用 http(s) URL' }
     }
     background = bg as ThemeBackground
   }
