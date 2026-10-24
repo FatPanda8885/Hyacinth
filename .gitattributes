@@ -1,0 +1,10 @@
+# 统一换行符，跨平台开源协作（Windows 开发者本地保持 core.autocrlf 即可）
+* text=auto eol=lf
+
+# Windows 专用脚本保留 CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# 二进制文件
+*.png binary
+*.zip binary

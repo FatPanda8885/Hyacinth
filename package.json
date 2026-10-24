@@ -1,0 +1,56 @@
+{
+  "name": "hyacinth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Hyacinth 新标签页 — 简洁、高度可定制的浏览器开始页（主题 + 插件）",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "vue-tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "icons": "node scripts/generate-icons.mjs",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,mts,vue}": [
+      "eslint --fix"
+    ],
+    "*.{ts,mts,vue,json,css,md,html,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "pinia": "^4.1.0",
+    "vue": "^3.5.44"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^3.0.0",
+    "@eslint/js": "^9.39.5",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/chrome": "^0.3.6",
+    "@types/node": "^26.6.5",
+    "@typescript-eslint/parser": "^8.72.0",
+    "@vitejs/plugin-vue": "^6.0.10",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-vue": "^10.11.1",
+    "globals": "^17.13.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.9.10",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.0",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5",
+    "vue-eslint-parser": "^10.4.1",
+    "vue-tsc": "^3.3.13"
+  }
+}

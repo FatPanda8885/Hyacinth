@@ -1,0 +1,27 @@
+/**
+ * 主题变量总线（大纲 4.3）：
+ * 所有视觉 Token 都走 --hy-* CSS 变量；主题 = 一组变量值，只覆盖不写逻辑。
+ * 挂件与沙箱插件都从这同一套变量取值，保证风格统一。
+ */
+:root {
+  --hy-bg: #101014;
+  --hy-bg-soft: #1a1a21;
+  --hy-fg: #ececf1;
+  --hy-fg-muted: #9a9aa5;
+  --hy-accent: #8b7cf8;
+  --hy-accent-soft: rgba(139, 124, 248, 0.16);
+  --hy-border: #2a2a33;
+  --hy-radius: 12px;
+  --hy-font: system-ui, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--hy-font);
+  background: var(--hy-bg);
+  color: var(--hy-fg);
+}
