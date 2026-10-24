@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 
+import { useAutoPush } from '@/core/sync/autoPush'
 import { openOptionsPage } from '@/platform/runtime'
 import { useConfigStore } from '@/stores/config'
 import BackgroundLayer from '@/themes/BackgroundLayer.vue'
@@ -10,6 +11,7 @@ import CanvasStage from './components/CanvasStage.vue'
 
 const store = useConfigStore()
 const { theme, effects } = useTheme()
+useAutoPush() // 插件写存储等间接落盘也纳入自动推送
 
 onMounted(() => void store.init())
 </script>

@@ -53,6 +53,41 @@ export const CONFIG_KEY = 'hyacinth:config'
 
 export const configStorage = getStorage()
 
+/** GitHub 同步的本地状态：凭据绝不放进配置树（否则会被同步出去） */
+export interface SyncSettings {
+  /** fine-grained PAT（仅 gists 读写权限）或 classic token（gist scope） */
+  token: string
+  /** 绑定的 secret gist id；首次推送前为空 */
+  gistId: string | null
+  /** token 对应的 GitHub 账号名（验证成功时记录） */
+  login: string | null
+  /** 配置保存后自动推送到云端 */
+  autoPush: boolean
+  lastPushAt: string | null
+  lastPulledAt: string | null
+}
+
+export const DEFAULT_SYNC_SETTINGS: SyncSettings = {
+  token: '',
+  gistId: null,
+  login: null,
+  autoPush: false,
+  lastPushAt: null,
+  lastPulledAt: null,
+}
+
+/** 同步状态在 storage 里的键（与配置树并列，不随同步分发） */
+export const SYNC_KEY = 'hyacinth:sync'
+
+export async function loadSyncSettings(): Promise<SyncSettings> {
+  const raw = await configStorage.get<Partial<SyncSettings>>(SYNC_KEY)
+  return { ...DEFAULT_SYNC_SETTINGS, ...raw }
+}
+
+export async function saveSyncSettings(settings: SyncSettings): Promise<void> {
+  await configStorage.set(SYNC_KEY, settings)
+}
+
 /**
  * 监听某个键的外部变更（其他页面/设备的写入），返回取消函数。
  * 扩展上下文用 chrome.storage.onChanged；普通页面开发模式退化为
