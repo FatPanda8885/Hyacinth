@@ -483,8 +483,36 @@ onMounted(() => {
   font-size: 13px;
 }
 
+.registry-input,
+.url-form input[type='url'],
+.url-form input[type='text'] {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--hy-border);
+  background: var(--hy-bg);
+  color: var(--hy-fg);
+  font-size: 13px;
+  line-height: 1.4;
+  height: 36px;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.registry-input::placeholder,
+.url-form input::placeholder {
+  color: var(--hy-fg-muted);
+}
+
+.registry-input:focus,
+.url-form input[type='url']:focus,
+.url-form input[type='text']:focus {
+  border-color: var(--hy-accent);
+}
+
 .registry-bar {
   display: flex;
+  align-items: center;
   gap: 10px;
   margin-bottom: 6px;
 }
@@ -494,14 +522,21 @@ onMounted(() => {
   min-width: 0;
 }
 
+/* 与输入框（8px 内边距 + 13px 字号）等高对齐 */
 .registry-bar .toggle {
   flex-shrink: 0;
+  height: 36px;
+  padding: 0 18px;
 }
 
 .url-form {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--hy-border);
+  border-radius: 10px;
+  background: var(--hy-bg);
 }
 
 .url-form input[type='url'],
@@ -514,7 +549,7 @@ onMounted(() => {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 14px;
+  gap: 10px 16px;
   font-size: 13px;
   color: var(--hy-fg-muted);
 }
@@ -522,13 +557,39 @@ onMounted(() => {
 .perm-picker .pick {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid var(--hy-border);
+  border-radius: 8px;
+  background: var(--hy-bg-soft);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.perm-picker .pick:hover {
+  border-color: var(--hy-fg-muted);
+  color: var(--hy-fg);
+}
+
+.perm-picker .pick:has(input:checked) {
+  border-color: var(--hy-accent-soft);
+  color: var(--hy-accent);
+}
+
+.perm-picker input[type='checkbox'] {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--hy-accent);
   cursor: pointer;
 }
 
 .perm-picker input[type='text'] {
   flex: 1;
   min-width: 220px;
+  width: auto;
 }
 
 .url-form > .toggle {
