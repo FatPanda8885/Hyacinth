@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { getExtensionVersion } from '@/platform/runtime'
 import { useConfigStore } from '@/stores/config'
@@ -19,6 +19,14 @@ const sections = [
 type SectionId = (typeof sections)[number]['id']
 const active = ref<SectionId>('general')
 const version = getExtensionVersion()
+
+// 分区切换的转场方向：往后切从右滑入，往回切从左滑入
+const transitionName = ref<'slide-left' | 'slide-right'>('slide-left')
+watch(active, (to, from) => {
+  const toIdx = sections.findIndex((s) => s.id === to)
+  const fromIdx = sections.findIndex((s) => s.id === from)
+  transitionName.value = toIdx >= fromIdx ? 'slide-left' : 'slide-right'
+})
 
 const store = useConfigStore()
 const activeSection = computed(() => sections.find((s) => s.id === active.value))
@@ -71,27 +79,31 @@ onBeforeUnmount(() => {
     </aside>
 
     <main class="panel">
-      <h1>{{ activeSection?.label }}</h1>
-      <p class="hint">{{ activeSection?.hint }}</p>
+      <Transition :name="transitionName" mode="out-in">
+        <div :key="active" class="panel-body">
+          <h1>{{ activeSection?.label }}</h1>
+          <p class="hint">{{ activeSection?.hint }}</p>
 
-      <GeneralSection v-if="active === 'general'" />
-      <AppearanceSection v-else-if="active === 'appearance'" />
-      <ShortcutsSection v-else-if="active === 'widgets'" />
-      <div v-else-if="active === 'plugins'" class="card placeholder">
-        建设中 · 插件市场对应路线图 M5
-      </div>
+          <GeneralSection v-if="active === 'general'" />
+          <AppearanceSection v-else-if="active === 'appearance'" />
+          <ShortcutsSection v-else-if="active === 'widgets'" />
+          <div v-else-if="active === 'plugins'" class="card placeholder">
+            建设中 · 插件市场对应路线图 M5
+          </div>
 
-      <div v-else-if="active === 'about'" class="card">
-        <dl class="facts">
-          <dt>版本</dt>
-          <dd>v{{ version }}</dd>
-          <dt>配置 schema</dt>
-          <dd>v{{ store.config.schemaVersion }}</dd>
-          <dt>已安装插件</dt>
-          <dd>{{ store.config.plugins.length }}</dd>
-        </dl>
-        <p class="note">Hyacinth 是开源项目（MIT License），主题与插件生态建设中。</p>
-      </div>
+          <div v-else-if="active === 'about'" class="card">
+            <dl class="facts">
+              <dt>版本</dt>
+              <dd>v{{ version }}</dd>
+              <dt>配置 schema</dt>
+              <dd>v{{ store.config.schemaVersion }}</dd>
+              <dt>已安装插件</dt>
+              <dd>{{ store.config.plugins.length }}</dd>
+            </dl>
+            <p class="note">Hyacinth 是开源项目（MIT License），主题与插件生态建设中。</p>
+          </div>
+        </div>
+      </Transition>
     </main>
   </div>
 </template>
@@ -178,6 +190,36 @@ onBeforeUnmount(() => {
   margin: 0 0 20px;
   color: var(--hy-fg-muted);
   font-size: 14px;
+}
+
+/* 分区切换转场（out-in 顺序播放）：往后切新内容从右滑入，往回切从左滑入 */
+.slide-left-enter-active,
+.slide-left-leave-active,
+.slide-right-enter-active,
+.slide-right-leave-active {
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.slide-left-enter-from {
+  opacity: 0;
+  transform: translateX(14px);
+}
+
+.slide-left-leave-to {
+  opacity: 0;
+  transform: translateX(-14px);
+}
+
+.slide-right-enter-from {
+  opacity: 0;
+  transform: translateX(-14px);
+}
+
+.slide-right-leave-to {
+  opacity: 0;
+  transform: translateX(14px);
 }
 
 .card {
