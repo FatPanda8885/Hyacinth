@@ -4,10 +4,8 @@ import { computed, onMounted } from 'vue'
 import { openOptionsPage } from '@/platform/runtime'
 import { useConfigStore } from '@/stores/config'
 import { backgroundStyleFor } from '@/widgets/background'
-import { getWidget } from '@/widgets'
 
-/** M1 固定纵向布局；M2 起挂件顺序与位置由画布槽位（config.slots）决定 */
-const WIDGET_ORDER = ['clock', 'search', 'shortcuts']
+import CanvasStage from './components/CanvasStage.vue'
 
 const store = useConfigStore()
 const bgStyle = computed(() => backgroundStyleFor(store.config.widgets.background))
@@ -18,9 +16,7 @@ onMounted(() => void store.init())
 <template>
   <div class="bg" :style="bgStyle" aria-hidden="true"></div>
 
-  <main class="stage">
-    <component :is="getWidget(type)?.component" v-for="type in WIDGET_ORDER" :key="type" />
-  </main>
+  <CanvasStage />
 
   <button
     class="settings"
@@ -54,16 +50,6 @@ onMounted(() => void store.init())
   transition: background 0.4s ease;
 }
 
-.stage {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 42px;
-  padding-bottom: 6vh;
-}
-
 .settings {
   position: fixed;
   right: 18px;
@@ -81,6 +67,7 @@ onMounted(() => void store.init())
   transition:
     opacity 0.15s ease,
     color 0.15s ease;
+  z-index: 9998;
 }
 
 .settings:hover,

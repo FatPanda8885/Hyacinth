@@ -118,7 +118,8 @@ function chooseHighlighted(): void {
   display: flex;
   align-items: center;
   gap: 10px;
-  width: min(560px, 86vw);
+  width: 100%;
+  max-width: 560px;
   padding: 6px 6px 6px 8px;
   border-radius: 999px;
   background: rgba(16, 16, 20, 0.55);

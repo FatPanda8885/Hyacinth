@@ -3,7 +3,7 @@ import { ref } from 'vue'
 
 import { CONFIG_KEY, configStorage, onStorageChange } from '@/platform/storage'
 import { DEFAULT_CONFIG, migrate } from '@/shared/config'
-import type { HyacinthConfig } from '@/shared/types'
+import type { HyacinthConfig, Slot } from '@/shared/types'
 
 export type SaveState = 'idle' | 'pending' | 'saved'
 
@@ -58,6 +58,12 @@ export const useConfigStore = defineStore('config', () => {
     scheduleSave()
   }
 
+  /** 整体替换画布槽位（布局引擎提交拖拽/缩放结果时调用） */
+  function setSlots(slots: Slot[]): void {
+    config.value.slots = slots
+    scheduleSave()
+  }
+
   function scheduleSave(): void {
     savePending = true
     saveState.value = 'pending'
@@ -86,6 +92,7 @@ export const useConfigStore = defineStore('config', () => {
     ensureWidgetDefaults,
     updateWidget,
     resetWidget,
+    setSlots,
     flush,
   }
 })

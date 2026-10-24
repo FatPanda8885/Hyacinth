@@ -34,7 +34,7 @@ const links = computed(() => cfg.value.links.filter((l) => l.url.trim()))
   flex-wrap: wrap;
   justify-content: center;
   gap: 8px 20px;
-  max-width: min(720px, 88vw);
+  max-width: 100%;
 }
 
 .tile {
