@@ -6,6 +6,7 @@ import { DEFAULT_CONFIG, DEFAULT_THEME_ID, migrate } from '@/shared/config'
 import type {
   BackgroundEffects,
   HyacinthConfig,
+  InstalledPlugin,
   Slot,
   ThemeBackground,
   ThemeDefinition,
@@ -55,6 +56,12 @@ export const useConfigStore = defineStore('config', () => {
   function updateWidget(type: string, patch: Record<string, unknown>): void {
     const existing = config.value.widgets[type]
     config.value.widgets[type] = { ...existing, ...patch }
+    scheduleSave()
+  }
+
+  /** 整体替换某挂件的配置命名空间（插件存储删除键等场景需要覆盖而非合并） */
+  function setWidgetConfig(type: string, data: Record<string, unknown>): void {
+    config.value.widgets[type] = data
     scheduleSave()
   }
 
@@ -113,6 +120,12 @@ export const useConfigStore = defineStore('config', () => {
     scheduleSave()
   }
 
+  /** 新增/更新已安装插件记录（同 id 覆盖） */
+  function upsertPlugin(plugin: InstalledPlugin): void {
+    config.value.plugins = [...config.value.plugins.filter((p) => p.id !== plugin.id), plugin]
+    scheduleSave()
+  }
+
   function scheduleSave(): void {
     savePending = true
     saveState.value = 'pending'
@@ -140,6 +153,7 @@ export const useConfigStore = defineStore('config', () => {
     load,
     ensureWidgetDefaults,
     updateWidget,
+    setWidgetConfig,
     resetWidget,
     setSlots,
     setThemeId,
@@ -147,6 +161,7 @@ export const useConfigStore = defineStore('config', () => {
     setBackgroundEffects,
     upsertCustomTheme,
     removeCustomTheme,
+    upsertPlugin,
     flush,
   }
 })

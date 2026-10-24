@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Hyacinth · 倒计时</title>
+    <style>
+      /* 握手前的兜底色，init 后被主题变量覆盖 */
+      :root {
+        --hy-accent: #8b7cf8;
+        --hy-on-bg: #ffffff;
+        --hy-on-bg-muted: rgba(255, 255, 255, 0.72);
+        --hy-glass-hover: rgba(255, 255, 255, 0.12);
+      }
+      body {
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: system-ui, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        color: var(--hy-on-bg);
+      }
+      .box {
+        text-align: center;
+        padding: 12px;
+      }
+      .days {
+        font-size: 56px;
+        font-weight: 200;
+        line-height: 1;
+        color: var(--hy-accent);
+        font-variant-numeric: tabular-nums;
+      }
+      .unit {
+        font-size: 13px;
+        color: var(--hy-on-bg-muted);
+        margin-top: 4px;
+      }
+      .title {
+        margin: 8px 0 14px;
+        font-size: 15px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 240px;
+      }
+      .edit {
+        display: none;
+        gap: 6px;
+        justify-content: center;
+      }
+      .box.editing .edit {
+        display: flex;
+      }
+      .box.editing .title {
+        display: none;
+      }
+      input {
+        padding: 5px 8px;
+        border-radius: 7px;
+        border: 1px solid var(--hy-glass-hover);
+        background: var(--hy-glass-hover);
+        color: var(--hy-on-bg);
+        font-size: 12px;
+        outline: none;
+      }
+      button {
+        padding: 5px 10px;
+        border-radius: 7px;
+        border: 1px solid var(--hy-glass-hover);
+        background: transparent;
+        color: var(--hy-on-bg-muted);
+        font-size: 12px;
+        cursor: pointer;
+      }
+      button:hover {
+        color: var(--hy-on-bg);
+      }
+      .toggle {
+        position: absolute;
+        top: 4px;
+        right: 6px;
+        opacity: 0;
+        transition: opacity 0.15s ease;
+      }
+      body:hover .toggle {
+        opacity: 0.8;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="box" id="box">
+      <button class="toggle" id="toggle" title="编辑">✎</button>
+      <div class="days" id="days">—</div>
+      <div class="unit" id="unit">天</div>
+      <div class="title" id="title"></div>
+      <div class="edit">
+        <input id="title-input" type="text" placeholder="名称" maxlength="16" />
+        <input id="date-input" type="date" />
+        <button id="save">保存</button>
+      </div>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

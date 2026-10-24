@@ -7,6 +7,7 @@ import { useTheme } from '@/themes/useTheme'
 
 import AppearanceSection from './sections/AppearanceSection.vue'
 import GeneralSection from './sections/GeneralSection.vue'
+import PluginsSection from './sections/PluginsSection.vue'
 import ShortcutsSection from './sections/ShortcutsSection.vue'
 
 const sections = [
@@ -89,9 +90,7 @@ onBeforeUnmount(() => {
           <GeneralSection v-if="active === 'general'" />
           <AppearanceSection v-else-if="active === 'appearance'" />
           <ShortcutsSection v-else-if="active === 'widgets'" />
-          <div v-else-if="active === 'plugins'" class="card placeholder">
-            建设中 · 插件市场对应路线图 M5
-          </div>
+          <PluginsSection v-else-if="active === 'plugins'" />
 
           <div v-else-if="active === 'about'" class="card">
             <dl class="facts">

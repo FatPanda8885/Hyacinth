@@ -23,6 +23,10 @@ export default defineManifest({
     service_worker: 'src/background/index.ts',
     type: 'module',
   },
+  sandbox: {
+    pages: ['src/plugins/countdown/index.html', 'src/plugins/hitokoto/index.html'],
+  },
+  optional_host_permissions: ['https://*/*'],
   permissions: ['storage'],
   minimum_chrome_version: '116',
 })

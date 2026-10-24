@@ -20,8 +20,17 @@ import {
 } from '@/core/layout/slots'
 import { newId } from '@/shared/id'
 import type { Slot } from '@/shared/types'
+import {
+  BUNDLED_PLUGINS,
+  getPluginEntry,
+  parsePluginWidgetType,
+  pluginWidgetType,
+  type PluginCatalogEntry,
+} from '@/plugins/catalog'
 import { useConfigStore } from '@/stores/config'
 import { getWidget, listWidgets } from '@/widgets'
+import PluginWidget from '@/widgets/plugin/PluginWidget.vue'
+import type { WidgetConstraints } from '@/widgets/registry'
 
 import WidgetFrame from './WidgetFrame.vue'
 
@@ -30,7 +39,38 @@ const store = useConfigStore()
 const editing = ref(false)
 const selectedId = ref<string | null>(null)
 const addOpen = ref(false)
-const catalog = listWidgets()
+
+/** 添加菜单目录：内置挂件 + 已启用的插件 */
+interface AddEntry {
+  type: string
+  name: string
+  constraints: WidgetConstraints
+}
+
+const addEntries = computed<AddEntry[]>(() => {
+  const builtins: AddEntry[] = listWidgets().map((w) => ({
+    type: w.type,
+    name: w.name,
+    constraints: w.constraints,
+  }))
+  const enabledPlugins = BUNDLED_PLUGINS.filter((p) =>
+    store.config.plugins.some((i) => i.id === p.id && i.enabled),
+  ).map((p: PluginCatalogEntry) => ({
+    type: pluginWidgetType(p.id),
+    name: `${p.name} · 插件`,
+    constraints: p.constraints,
+  }))
+  return [...builtins, ...enabledPlugins]
+})
+
+/** 槽位类型的尺寸约束（内置挂件或插件目录） */
+function constraintsOf(type: string): WidgetConstraints {
+  const builtin = getWidget(type)?.constraints
+  if (builtin) return builtin
+  const pluginId = parsePluginWidgetType(type)
+  const plugin = pluginId ? getPluginEntry(pluginId) : undefined
+  return plugin?.constraints ?? { minW: 3, minH: 2, defaultW: 6, defaultH: 4 }
+}
 
 /** 舞台实际尺寸（ResizeObserver 维护），用于 px ↔ 网格单位换算 */
 const stageRef = ref<HTMLElement | null>(null)
@@ -84,8 +124,8 @@ function onInteract(e: PointerEvent, slot: Slot, handle?: Handle): void {
   const base = slots.find((s) => s.id === slot.id)
   if (!base) return
 
-  const def = getWidget(base.widget)
-  const min = { w: def?.constraints.minW ?? 1, h: def?.constraints.minH ?? 1 }
+  const constraints = constraintsOf(base.widget)
+  const min = { w: constraints.minW, h: constraints.minH }
   const baseGeo: GridSlot = { x: base.x, y: base.y, w: base.w, h: base.h }
   const startX = e.clientX
   const startY = e.clientY
@@ -129,16 +169,15 @@ function onInteract(e: PointerEvent, slot: Slot, handle?: Handle): void {
 }
 
 function addWidget(type: string): void {
-  const def = getWidget(type)
-  if (!def) return
-  const pos = findAddPosition(store.config.slots)
+  const constraints = constraintsOf(type)
+  const pos = findAddPosition(store.config.slots, constraints.defaultW, constraints.defaultH)
   const slot: Slot = {
     id: `slot-${type}-${newId().slice(0, 8)}`,
     widget: type,
     x: pos.x,
     y: pos.y,
-    w: def.constraints.defaultW,
-    h: def.constraints.defaultH,
+    w: constraints.defaultW,
+    h: constraints.defaultH,
     z: topZ(store.config.slots) + 1,
   }
   store.setSlots([...store.config.slots, slot])
@@ -198,7 +237,12 @@ onBeforeUnmount(() => {
       @to-back="act(s.id, 'back')"
       @remove="act(s.id, 'remove')"
     >
-      <component :is="getWidget(s.widget)?.component" />
+      <PluginWidget
+        v-if="parsePluginWidgetType(s.widget)"
+        :plugin-id="parsePluginWidgetType(s.widget)!"
+        :slot-id="s.id"
+      />
+      <component :is="getWidget(s.widget)?.component" v-else />
     </WidgetFrame>
 
     <div v-if="store.loaded && renderSlots.length === 0" class="empty">
@@ -231,7 +275,7 @@ onBeforeUnmount(() => {
       <div class="add-wrap">
         <button type="button" @click="addOpen = !addOpen">＋ 添加挂件</button>
         <ul v-if="addOpen" class="add-menu" role="listbox" aria-label="挂件目录">
-          <li v-for="w in catalog" :key="w.type" role="option" @click="addWidget(w.type)">
+          <li v-for="w in addEntries" :key="w.type" role="option" @click="addWidget(w.type)">
             {{ w.name }}
           </li>
         </ul>
