@@ -10,5 +10,5 @@ export const shortcutsWidget = defineWidget({
   constraints: { minW: 6, minH: 3, defaultW: 14, defaultH: 6 },
 })
 
-export { SHORTCUTS_DEFAULTS, newId, normalizeUrl } from './model'
+export { SHORTCUTS_DEFAULTS, moveItem, newId, normalizeUrl } from './model'
 export type { ShortcutLink, ShortcutsConfig } from './model'
