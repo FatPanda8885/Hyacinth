@@ -1,21 +1,65 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import { useConfigStore } from '@/stores/config'
+import { deleteAsset, putAsset } from '@/platform/assetStore'
+import type { ThemeBackground, ThemeDefinition } from '@/shared/types'
+import { BUILTIN_THEMES } from '@/themes/builtin'
+import { exportTheme, findTheme, normalizeEffects, validateTheme } from '@/themes/apply'
+import BackgroundLayer from '@/themes/BackgroundLayer.vue'
+import { useTheme } from '@/themes/useTheme'
+import { normalizeUrl } from '@/widgets/shortcuts'
 import {
-  BACKGROUND_DEFAULTS,
-  type BackgroundConfig,
   type BackgroundType,
   PRESET_COLORS,
   PRESET_GRADIENTS,
+  assetRefToId,
   backgroundStyleFor,
+  isAssetRef,
+  makeAssetRef,
 } from '@/widgets/background'
 
 const store = useConfigStore()
-store.ensureWidgetDefaults('background', BACKGROUND_DEFAULTS)
+const { theme, effects } = useTheme() // 本页实时预览主题应用效果
 
-const cfg = computed(() => store.config.widgets.background as BackgroundConfig)
-const previewStyle = computed(() => backgroundStyleFor(cfg.value))
+// ---- 背景效果（模糊/亮度，实时预览） ----
+const blurModel = computed({
+  get: () => effects.value.blur,
+  set: (v: number) => setEffects({ blur: v, brightness: brightnessModel.value }),
+})
+const brightnessModel = computed({
+  get: () => effects.value.brightness,
+  set: (v: number) => setEffects({ blur: blurModel.value, brightness: v }),
+})
+
+function setEffects(next: { blur: number; brightness: number }): void {
+  const { blur, brightness } = normalizeEffects(next)
+  store.setBackgroundEffects(blur === 0 && brightness === 100 ? undefined : { blur, brightness })
+}
+
+const allThemes = computed<ThemeDefinition[]>(() => [
+  ...BUILTIN_THEMES,
+  ...store.config.customThemes,
+])
+const activeId = computed(() => store.config.theme.id)
+
+function previewStyle(def: ThemeDefinition): string {
+  return def.background ? backgroundStyleFor(def.background).background : 'var(--hy-bg)'
+}
+
+function swatches(def: ThemeDefinition): string[] {
+  const v = def.variables
+  return [v['--hy-bg'] ?? '#101014', v['--hy-bg-soft'] ?? '#1a1a21', v['--hy-accent'] ?? '#8b7cf8']
+}
+
+// ---- 背景覆盖（叠加在主题之上） ----
+const override = computed(() => store.config.theme.background)
+const activeDef = computed(() => findTheme(activeId.value, store.config.customThemes))
+
+/** 展示值 = 用户覆盖 ?? 主题自带；编辑时总是写入覆盖 */
+const bgValue = computed<ThemeBackground>(
+  () => override.value ?? activeDef.value?.background ?? { type: 'gradient', value: '' },
+)
 
 const typeLabels: Record<BackgroundType, string> = {
   gradient: '渐变',
@@ -26,32 +70,149 @@ const typeLabels: Record<BackgroundType, string> = {
 function setType(type: BackgroundType): void {
   const value =
     type === 'gradient' ? PRESET_GRADIENTS[0].value : type === 'color' ? PRESET_COLORS[0].value : ''
-  store.updateWidget('background', { type, value })
+  void applyOverride({ type, value })
 }
 
 function setValue(value: string): void {
-  store.updateWidget('background', { value })
+  void applyOverride({ type: bgValue.value.type, value })
+}
+
+/** 统一入口：换背景时回收不再被引用的本地资产 */
+async function applyOverride(next: ThemeBackground | undefined): Promise<void> {
+  const prev = store.config.theme.background
+  if (prev?.type === 'image' && isAssetRef(prev.value) && prev.value !== next?.value) {
+    await deleteAsset(assetRefToId(prev.value)).catch(() => {})
+  }
+  store.setBackgroundOverride(next)
+}
+
+async function onLocalImage(event: Event): Promise<void> {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file || !file.type.startsWith('image/')) return
+  importError.value = ''
+  try {
+    const id = await putAsset(file)
+    await applyOverride({ type: 'image', value: makeAssetRef(id) })
+  } catch {
+    importError.value = '本地图片保存失败，请重试'
+  }
+}
+
+function onUrlChange(event: Event): void {
+  const input = event.target as HTMLInputElement
+  const url = input.value.trim()
+  if (!url) return // 清空输入不动作，避免误删本地图片背景
+  void applyOverride({ type: 'image', value: normalizeUrl(url) })
+}
+
+// ---- 导入 / 导出 ----
+const importError = ref('')
+
+function exportCurrent(): void {
+  const def = activeDef.value
+  if (!def) return
+  const json = exportTheme(def, store.config.theme.variables)
+  const blob = new Blob([json], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `hyacinth-theme-${def.id}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function onImportFile(event: Event): void {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = () => {
+    try {
+      const result = validateTheme(JSON.parse(String(reader.result)))
+      if (!result.ok) {
+        importError.value = result.error
+        return
+      }
+      store.upsertCustomTheme(result.theme)
+      store.setThemeId(result.theme.id)
+      importError.value = ''
+    } catch {
+      importError.value = '无法解析文件，请确认是 Hyacinth 主题 JSON'
+    }
+  }
+  reader.readAsText(file)
 }
 </script>
 
 <template>
-  <div class="card">
+  <div class="card stack">
+    <!-- 主题选择 -->
     <div class="row">
-      <span>背景类型</span>
-      <div class="segment">
-        <button
-          v-for="(label, type) in typeLabels"
-          :key="type"
-          type="button"
-          :class="{ on: cfg.type === type }"
-          @click="setType(type)"
+      <span>主题</span>
+      <div class="themes">
+        <div
+          v-for="t in allThemes"
+          :key="t.id"
+          class="theme-card"
+          :class="{ active: t.id === activeId }"
+          role="button"
+          tabindex="0"
+          @click="store.setThemeId(t.id)"
+          @keydown.enter="store.setThemeId(t.id)"
         >
-          {{ label }}
-        </button>
+          <div class="theme-preview" :style="{ background: previewStyle(t) }">
+            <span
+              v-for="(c, i) in swatches(t)"
+              :key="i"
+              class="dot"
+              :style="{ background: c }"
+            ></span>
+          </div>
+          <div class="theme-name">
+            {{ t.name }}
+            <button
+              v-if="!BUILTIN_THEMES.some((b) => b.id === t.id)"
+              type="button"
+              class="del"
+              title="删除此自定义主题"
+              aria-label="删除此自定义主题"
+              @click.stop="store.removeCustomTheme(t.id)"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div v-if="cfg.type === 'gradient'" class="row wrap">
+    <!-- 背景覆盖 -->
+    <div class="row wrap">
+      <span>
+        背景自定义
+        <em v-if="override" class="badge">已覆盖主题</em>
+      </span>
+      <div class="bg-controls">
+        <button v-if="override" type="button" class="follow" @click="applyOverride(undefined)">
+          跟随主题
+        </button>
+        <div class="segment">
+          <button
+            v-for="(label, type) in typeLabels"
+            :key="type"
+            type="button"
+            :class="{ on: bgValue.type === type }"
+            @click="setType(type)"
+          >
+            {{ label }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="bgValue.type === 'gradient'" class="row wrap">
       <span>预设渐变</span>
       <div class="swatches">
         <button
@@ -59,17 +220,17 @@ function setValue(value: string): void {
           :key="p.id"
           type="button"
           class="swatch"
-          :class="{ on: cfg.value === p.value }"
+          :class="{ on: bgValue.value === p.value }"
           :style="{ background: p.value }"
           :title="p.label"
           @click="setValue(p.value)"
         >
-          <span v-if="cfg.value === p.value" class="check">✓</span>
+          <span v-if="bgValue.value === p.value" class="check">✓</span>
         </button>
       </div>
     </div>
 
-    <div v-else-if="cfg.type === 'color'" class="row wrap">
+    <div v-else-if="bgValue.type === 'color'" class="row wrap">
       <span>颜色</span>
       <div class="swatches">
         <button
@@ -77,36 +238,91 @@ function setValue(value: string): void {
           :key="p.id"
           type="button"
           class="swatch"
-          :class="{ on: cfg.value === p.value }"
+          :class="{ on: bgValue.value === p.value }"
           :style="{ background: p.value }"
           :title="p.label"
           @click="setValue(p.value)"
         >
-          <span v-if="cfg.value === p.value" class="check">✓</span>
+          <span v-if="bgValue.value === p.value" class="check">✓</span>
         </button>
         <label class="swatch custom" title="自定义颜色">
           <input
             type="color"
-            :value="cfg.value"
+            :value="bgValue.value"
             @input="setValue(($event.target as HTMLInputElement).value)"
           />
         </label>
       </div>
     </div>
 
-    <div v-else class="row">
-      <label for="bg-url">图片 URL</label>
-      <input
-        id="bg-url"
-        class="url"
-        type="url"
-        placeholder="https://example.com/wallpaper.jpg"
-        :value="cfg.type === 'image' ? cfg.value : ''"
-        @change="setValue(($event.target as HTMLInputElement).value)"
-      />
+    <div v-else class="row wrap">
+      <label for="bg-url">图片背景</label>
+      <div class="io">
+        <label class="ghost-btn file">
+          选择本地图片…
+          <input type="file" accept="image/*" @change="onLocalImage" />
+        </label>
+        <input
+          id="bg-url"
+          class="url"
+          type="url"
+          :placeholder="
+            isAssetRef(bgValue.value) ? '已使用本地图片，也可输入 URL 替换' : '或输入图片 URL'
+          "
+          :value="bgValue.type === 'image' && !isAssetRef(bgValue.value) ? bgValue.value : ''"
+          @change="onUrlChange"
+        />
+      </div>
     </div>
 
-    <div class="preview" :style="previewStyle" aria-hidden="true">
+    <!-- 背景效果 -->
+    <div class="row wrap">
+      <span>背景效果</span>
+      <div class="fx">
+        <label class="fx-item">
+          <span>模糊</span>
+          <input
+            v-model.number="blurModel"
+            class="fx-input"
+            type="number"
+            min="0"
+            max="40"
+            step="1"
+            aria-label="背景模糊度（像素）"
+          />
+          <span class="unit">px</span>
+        </label>
+        <label class="fx-item">
+          <span>亮度</span>
+          <input
+            v-model.number="brightnessModel"
+            class="fx-input"
+            type="number"
+            min="40"
+            max="150"
+            step="5"
+            aria-label="背景亮度（百分比）"
+          />
+          <span class="unit">%</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- 导入导出 -->
+    <div class="row">
+      <span>分享主题</span>
+      <div class="io">
+        <button type="button" class="ghost-btn" @click="exportCurrent">导出当前主题</button>
+        <label class="ghost-btn file">
+          导入主题
+          <input type="file" accept="application/json,.json" @change="onImportFile" />
+        </label>
+      </div>
+    </div>
+    <p v-if="importError" class="error" role="alert">{{ importError }}</p>
+
+    <div class="preview" aria-hidden="true">
+      <BackgroundLayer :background="theme.background" :effects="effects" />
       <span>预览</span>
     </div>
   </div>
@@ -120,16 +336,16 @@ function setValue(value: string): void {
   background: var(--hy-bg-soft);
 }
 
+.stack > .row + .row {
+  border-top: 1px solid var(--hy-border);
+}
+
 .row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 20px;
   padding: 13px 0;
-}
-
-.row + .row {
-  border-top: 1px solid var(--hy-border);
 }
 
 .row.wrap {
@@ -139,6 +355,99 @@ function setValue(value: string): void {
 .row > label,
 .row > span {
   font-size: 14px;
+}
+
+.badge {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--hy-accent);
+  border: 1px solid var(--hy-accent-soft);
+  background: var(--hy-accent-soft);
+  border-radius: 999px;
+  padding: 1px 8px;
+  margin-left: 6px;
+}
+
+/* 主题卡片 */
+.themes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.theme-card {
+  width: 118px;
+  border: 2px solid var(--hy-border);
+  border-radius: var(--hy-radius);
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.theme-card:hover {
+  border-color: var(--hy-fg-muted);
+}
+
+.theme-card.active {
+  border-color: var(--hy-accent);
+}
+
+.theme-preview {
+  position: relative;
+  height: 58px;
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  padding: 7px;
+}
+
+.dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1px solid rgba(127, 127, 127, 0.4);
+}
+
+.theme-name {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 4px;
+  font-size: 13px;
+  color: var(--hy-fg);
+  background: var(--hy-bg);
+}
+
+.del {
+  border: none;
+  background: transparent;
+  color: var(--hy-fg-muted);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0 3px;
+}
+
+.del:hover {
+  color: #e5484d;
+}
+
+/* 背景控件 */
+.bg-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.follow {
+  border: 1px solid var(--hy-accent-soft);
+  background: var(--hy-accent-soft);
+  color: var(--hy-accent);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 12px;
+  cursor: pointer;
 }
 
 .segment {
@@ -214,18 +523,99 @@ function setValue(value: string): void {
   font-size: 13px;
 }
 
+/* 背景效果输入 */
+.fx {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.fx-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--hy-fg-muted);
+}
+
+.fx-input {
+  width: 72px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--hy-border);
+  background: var(--hy-bg);
+  color: var(--hy-fg);
+  font-size: 13px;
+  text-align: right;
+  outline: none;
+}
+
+.fx-input:focus {
+  border-color: var(--hy-accent);
+}
+
+.unit {
+  font-size: 12px;
+  color: var(--hy-fg-muted);
+}
+
+/* 导入导出 */
+.io {
+  display: flex;
+  gap: 10px;
+}
+
+.ghost-btn {
+  border: 1px solid var(--hy-border);
+  background: transparent;
+  color: var(--hy-fg);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.ghost-btn:hover {
+  border-color: var(--hy-accent);
+  color: var(--hy-accent);
+}
+
+.file {
+  position: relative;
+  overflow: hidden;
+}
+
+.file input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.error {
+  margin: 0;
+  color: #e5484d;
+  font-size: 13px;
+}
+
 .preview {
+  position: relative;
   margin-top: 18px;
-  height: 130px;
+  height: 110px;
   border-radius: var(--hy-radius);
   border: 1px solid var(--hy-border);
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+}
+
+.preview > span {
+  z-index: 1;
 }
 
 .preview span {
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(127, 127, 127, 0.8);
   font-size: 12px;
   letter-spacing: 0.3em;
 }

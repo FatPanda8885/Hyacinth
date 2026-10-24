@@ -300,7 +300,7 @@ onBeforeUnmount(() => {
   border: none;
   border-radius: 999px;
   background: var(--hy-accent);
-  color: #fff;
+  color: var(--hy-on-bg);
   font-size: 14px;
   cursor: pointer;
 }
@@ -313,8 +313,8 @@ onBeforeUnmount(() => {
   place-items: center;
   border: none;
   border-radius: 50%;
-  background: rgba(16, 16, 20, 0.45);
-  color: rgba(255, 255, 255, 0.6);
+  background: var(--hy-glass);
+  color: var(--hy-on-bg-muted);
   cursor: pointer;
   opacity: 0.4;
   transition:
@@ -325,7 +325,7 @@ onBeforeUnmount(() => {
 .fab:hover,
 .fab:focus-visible {
   opacity: 1;
-  color: #fff;
+  color: var(--hy-on-bg);
 }
 
 .edit-entry {

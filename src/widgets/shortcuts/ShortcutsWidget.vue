@@ -46,12 +46,12 @@ const links = computed(() => cfg.value.links.filter((l) => l.url.trim()))
   padding: 10px 4px;
   border-radius: var(--hy-radius);
   text-decoration: none;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--hy-on-bg);
   transition: background 0.15s ease;
 }
 
 .tile:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--hy-glass-hover);
 }
 
 .avatar {
@@ -62,7 +62,7 @@ const links = computed(() => cfg.value.links.filter((l) => l.url.trim()))
   border-radius: 14px;
   font-size: 20px;
   font-weight: 600;
-  color: #fff;
+  color: var(--hy-on-bg);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
 }
 

@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { getExtensionVersion } from '@/platform/runtime'
 import { useConfigStore } from '@/stores/config'
+import { useTheme } from '@/themes/useTheme'
 
 import AppearanceSection from './sections/AppearanceSection.vue'
 import GeneralSection from './sections/GeneralSection.vue'
@@ -10,7 +11,7 @@ import ShortcutsSection from './sections/ShortcutsSection.vue'
 
 const sections = [
   { id: 'general', label: '通用', hint: '搜索引擎与时钟的基础设置' },
-  { id: 'appearance', label: '外观', hint: '背景设置（完整主题系统见 M3）' },
+  { id: 'appearance', label: '外观', hint: '主题切换、背景自定义与主题导入导出' },
   { id: 'widgets', label: '快捷方式', hint: '管理新标签页上的快捷方式磁贴' },
   { id: 'plugins', label: '插件市场', hint: '发现、安装与管理第三方插件' },
   { id: 'about', label: '关于', hint: '版本与开源信息' },
@@ -29,6 +30,7 @@ watch(active, (to, from) => {
 })
 
 const store = useConfigStore()
+useTheme() // 设置页同样应用主题变量（配置变化/跨页同步自动联动）
 const activeSection = computed(() => sections.find((s) => s.id === active.value))
 
 const saveLabel = computed(() => {

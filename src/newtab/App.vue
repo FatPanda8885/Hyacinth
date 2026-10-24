@@ -1,20 +1,21 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { onMounted } from 'vue'
 
 import { openOptionsPage } from '@/platform/runtime'
 import { useConfigStore } from '@/stores/config'
-import { backgroundStyleFor } from '@/widgets/background'
+import BackgroundLayer from '@/themes/BackgroundLayer.vue'
+import { useTheme } from '@/themes/useTheme'
 
 import CanvasStage from './components/CanvasStage.vue'
 
 const store = useConfigStore()
-const bgStyle = computed(() => backgroundStyleFor(store.config.widgets.background))
+const { theme, effects } = useTheme()
 
 onMounted(() => void store.init())
 </script>
 
 <template>
-  <div class="bg" :style="bgStyle" aria-hidden="true"></div>
+  <BackgroundLayer :background="theme.background" :effects="effects" viewport />
 
   <CanvasStage />
 
@@ -43,13 +44,6 @@ onMounted(() => void store.init())
 </template>
 
 <style scoped>
-.bg {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  transition: background 0.4s ease;
-}
-
 .settings {
   position: fixed;
   right: 18px;
@@ -60,8 +54,8 @@ onMounted(() => void store.init())
   place-items: center;
   border: none;
   border-radius: 50%;
-  background: rgba(16, 16, 20, 0.45);
-  color: rgba(255, 255, 255, 0.6);
+  background: var(--hy-glass);
+  color: var(--hy-on-bg-muted);
   cursor: pointer;
   opacity: 0.4;
   transition:
@@ -73,6 +67,6 @@ onMounted(() => void store.init())
 .settings:hover,
 .settings:focus-visible {
   opacity: 1;
-  color: #fff;
+  color: var(--hy-on-bg);
 }
 </style>

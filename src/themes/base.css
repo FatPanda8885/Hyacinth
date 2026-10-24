@@ -13,6 +13,13 @@
   --hy-border: #2a2a33;
   --hy-radius: 12px;
   --hy-font: system-ui, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+  /* 挂件层 Token：画布背景上的前景与玻璃面板（主题可接管，浅色主题必需） */
+  --hy-on-bg: #ffffff;
+  --hy-on-bg-muted: rgba(255, 255, 255, 0.75);
+  --hy-glass: rgba(16, 16, 20, 0.55);
+  --hy-glass-border: rgba(255, 255, 255, 0.14);
+  --hy-glass-hover: rgba(255, 255, 255, 0.1);
+  --hy-popover: rgba(16, 16, 20, 0.92);
 }
 
 * {

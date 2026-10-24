@@ -138,8 +138,8 @@ function chooseHighlighted(): void {
   max-width: 560px;
   padding: 6px 6px 6px 8px;
   border-radius: 999px;
-  background: rgba(16, 16, 20, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--hy-glass);
+  border: 1px solid var(--hy-glass-border);
   backdrop-filter: blur(14px);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
   transition: border-color 0.15s ease;
@@ -161,15 +161,15 @@ function chooseHighlighted(): void {
   padding: 6px 10px;
   border: none;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  background: var(--hy-glass-hover);
+  color: var(--hy-on-bg);
   font-size: 13px;
   cursor: pointer;
   transition: background 0.15s ease;
 }
 
 .engine:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: color-mix(in srgb, var(--hy-on-bg) 16%, transparent);
 }
 
 .caret {
@@ -187,8 +187,8 @@ function chooseHighlighted(): void {
   padding: 6px;
   list-style: none;
   border-radius: 12px;
-  background: rgba(16, 16, 20, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--hy-popover);
+  border: 1px solid var(--hy-glass-border);
   backdrop-filter: blur(18px);
   box-shadow: 0 10px 32px rgba(0, 0, 0, 0.4);
   z-index: 10000;
@@ -202,12 +202,12 @@ function chooseHighlighted(): void {
   padding: 8px 10px;
   border-radius: 8px;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--hy-fg);
   cursor: pointer;
 }
 
 .menu li.hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--hy-glass-hover);
 }
 
 .menu li.active,
@@ -225,13 +225,13 @@ function chooseHighlighted(): void {
   flex: 1;
   border: none;
   background: transparent;
-  color: #fff;
+  color: var(--hy-on-bg);
   font-size: 16px;
   padding: 8px 4px;
   outline: none;
 }
 
 .input::placeholder {
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--hy-on-bg-muted);
 }
 </style>
