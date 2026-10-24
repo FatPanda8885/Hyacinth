@@ -1,12 +1,13 @@
 {
   "name": "hyacinth",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "Hyacinth 新标签页 — 简洁、高度可定制的浏览器开始页（主题 + 插件）",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:zip": "vite build && node scripts/zip-dist.mjs",
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

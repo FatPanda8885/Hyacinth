@@ -7,3 +7,4 @@ dev/
 .env.*
 .DS_Store
 Thumbs.db
+hyacinth-*.zip

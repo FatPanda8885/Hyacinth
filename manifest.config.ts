@@ -1,10 +1,12 @@
 import { defineManifest } from '@crxjs/vite-plugin'
 
+import pkg from './package.json'
+
 export default defineManifest({
   manifest_version: 3,
   name: 'Hyacinth',
   short_name: 'Hyacinth',
-  version: '0.1.0',
+  version: pkg.version,
   description: '简洁、高度可定制的新标签页：主题 + 插件。',
   icons: {
     16: 'icons/icon-16.png',
