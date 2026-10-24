@@ -126,6 +126,19 @@ export const useConfigStore = defineStore('config', () => {
     scheduleSave()
   }
 
+  /** 卸载插件：移除安装记录、画布槽位与其存储命名空间 */
+  function uninstallPlugin(id: string): void {
+    const ns = `plugin:${id}`
+    config.value.plugins = config.value.plugins.filter((p) => p.id !== id)
+    config.value.slots = config.value.slots.filter((s) => s.widget !== ns)
+    if (config.value.widgets[ns] !== undefined) {
+      const widgets = { ...config.value.widgets }
+      delete widgets[ns]
+      config.value.widgets = widgets
+    }
+    scheduleSave()
+  }
+
   function scheduleSave(): void {
     savePending = true
     saveState.value = 'pending'
@@ -162,6 +175,7 @@ export const useConfigStore = defineStore('config', () => {
     upsertCustomTheme,
     removeCustomTheme,
     upsertPlugin,
+    uninstallPlugin,
     flush,
   }
 })

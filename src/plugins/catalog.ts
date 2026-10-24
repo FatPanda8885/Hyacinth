@@ -1,13 +1,14 @@
 import type { WidgetConstraints } from '@/widgets/registry'
+import type { InstalledPlugin } from '@/shared/types'
 
-/** 内置示例插件的目录项；M5 起第三方插件经市场安装，结构一致 */
+/** 内置示例插件的目录项；远程插件（市场/URL 安装）由 InstalledPlugin 合成同构条目 */
 export interface PluginCatalogEntry {
   id: string
   name: string
   description: string
   version: string
   permissions: string[]
-  /** 沙箱页面在扩展内的路径 */
+  /** 内置插件为扩展内沙箱页面路径；远程插件为 https 入口 URL */
   entry: string
   constraints: WidgetConstraints
 }
@@ -33,8 +34,32 @@ export const BUNDLED_PLUGINS: PluginCatalogEntry[] = [
   },
 ]
 
+const FALLBACK_CONSTRAINTS: WidgetConstraints = { minW: 3, minH: 2, defaultW: 6, defaultH: 4 }
+
 export function getPluginEntry(id: string): PluginCatalogEntry | undefined {
   return BUNDLED_PLUGINS.find((p) => p.id === id)
+}
+
+/**
+ * 解析插件的可执行条目：优先按安装记录（远程插件 entry 为完整 URL），
+ * 其次内置目录；两者皆无（安装记录被手改坏）返回 undefined。
+ */
+export function resolvePluginEntry(
+  id: string,
+  installed: InstalledPlugin | undefined,
+): PluginCatalogEntry | undefined {
+  if (installed?.entryUrl) {
+    return {
+      id,
+      name: installed.name || id,
+      description: installed.description ?? '',
+      version: installed.version || '0.0.0',
+      permissions: [...installed.permissions],
+      entry: installed.entryUrl,
+      constraints: installed.constraints ?? FALLBACK_CONSTRAINTS,
+    }
+  }
+  return getPluginEntry(id)
 }
 
 /** 插件在 config.widgets 里的存储命名空间 */

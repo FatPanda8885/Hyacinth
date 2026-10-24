@@ -26,6 +26,12 @@ export default defineManifest({
   sandbox: {
     pages: ['src/plugins/countdown/index.html', 'src/plugins/hitokoto/index.html'],
   },
+  // M5：画布 iframe 允许加载远程插件页（沙箱内运行，宿主页面脚本不受影响）；
+  // http 仅放行本机回环，供插件开发者本地调试
+  content_security_policy: {
+    extension_pages:
+      "script-src 'self'; object-src 'self'; frame-src 'self' https: http://localhost:* http://127.0.0.1:*",
+  },
   optional_host_permissions: ['https://*/*'],
   permissions: ['storage'],
   minimum_chrome_version: '116',

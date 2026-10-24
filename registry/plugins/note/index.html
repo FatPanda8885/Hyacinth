@@ -1,0 +1,116 @@
+<!doctype html>
+<!-- Hyacinth 官方示例插件「随手记」：零依赖，内联最小协议客户端，演示 storage + theme 权限 -->
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Hyacinth · 随手记</title>
+    <style>
+      /* 握手前的兜底色，init 后被宿主主题变量覆盖 */
+      :root {
+        --hy-accent: #8b7cf8;
+        --hy-on-bg: #ffffff;
+        --hy-on-bg-muted: rgba(255, 255, 255, 0.72);
+        --hy-glass-hover: rgba(255, 255, 255, 0.12);
+      }
+      body {
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: system-ui, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        color: var(--hy-on-bg);
+      }
+      .note {
+        max-width: 92%;
+        text-align: center;
+        font-size: 15px;
+        line-height: 1.7;
+        cursor: text;
+        border-radius: 10px;
+        padding: 10px 14px;
+        outline: none;
+        transition: background 0.15s ease;
+      }
+      .note:hover {
+        background: var(--hy-glass-hover);
+      }
+      .hint {
+        color: var(--hy-on-bg-muted);
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="note" class="note" title="点击编辑">（连接中…）</div>
+
+    <script>
+      // ---- 最小协议客户端（等价于 @hyacinth/plugin-sdk 的握手 + storage.get/set） ----
+      ;(() => {
+        const V = 1
+        let seq = 0
+        const pending = new Map()
+        let theme = {}
+
+        function post(msg) {
+          parent.postMessage(msg, '*')
+        }
+        function rpc(method, params) {
+          const id = 'r' + ++seq
+          return new Promise((resolve, reject) => {
+            pending.set(id, { resolve, reject })
+            post({ v: V, type: 'rpc', id, method, params })
+          })
+        }
+        function applyTheme(vars) {
+          for (const [k, v] of Object.entries(vars || {})) {
+            document.documentElement.style.setProperty(k, v)
+          }
+        }
+
+        window.addEventListener('message', (e) => {
+          const m = e.data
+          if (!m || typeof m !== 'object' || m.v !== V) return
+          if (m.type === 'init') {
+            theme = m.payload.theme || {}
+            applyTheme(theme)
+            main()
+          } else if (m.type === 'theme') {
+            theme = m.payload || {}
+            applyTheme(theme)
+          } else if (m.type === 'rpc-result') {
+            const p = pending.get(m.id)
+            if (!p) return
+            pending.delete(m.id)
+            m.ok ? p.resolve(m.result) : p.reject(new Error(m.error))
+          }
+        })
+        post({ v: V, type: 'hello', protocol: V })
+
+        // ---- 插件逻辑：一句话便签（contenteditable 内联编辑，沙箱里禁用模态对话框） ----
+        let ready = false
+        const note = document.getElementById('note')
+
+        function render(text) {
+          note.textContent = text || ''
+          note.classList.toggle('hint', !text)
+          if (!text) note.textContent = '点一下，写句话'
+        }
+
+        async function main() {
+          if (ready) return
+          ready = true
+          render(await rpc('storage.get', { key: 'note' }))
+          note.contentEditable = 'true'
+          note.addEventListener('focus', () => {
+            if (note.textContent === '点一下，写句话') note.textContent = ''
+          })
+          note.addEventListener('blur', () => {
+            const text = note.textContent.trim()
+            void rpc('storage.set', { key: 'note', value: text }).then(() => render(text))
+          })
+        }
+      })()
+    </script>
+  </body>
+</html>
