@@ -77,6 +77,12 @@ export const useConfigStore = defineStore('config', () => {
     scheduleSave()
   }
 
+  /** 整树替换（云端恢复/导入）：调用方先经 migrate() 修整 */
+  function replaceAll(next: HyacinthConfig): void {
+    config.value = next
+    scheduleSave()
+  }
+
   /** 切换主题 */
   function setThemeId(id: string): void {
     config.value.theme.id = id
@@ -169,6 +175,7 @@ export const useConfigStore = defineStore('config', () => {
     setWidgetConfig,
     resetWidget,
     setSlots,
+    replaceAll,
     setThemeId,
     setBackgroundOverride,
     setBackgroundEffects,

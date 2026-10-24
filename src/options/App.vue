@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { getExtensionVersion } from '@/platform/runtime'
+import { useAutoPush } from '@/core/sync/autoPush'
 import { useConfigStore } from '@/stores/config'
 import { useTheme } from '@/themes/useTheme'
 
@@ -9,12 +10,14 @@ import AppearanceSection from './sections/AppearanceSection.vue'
 import GeneralSection from './sections/GeneralSection.vue'
 import PluginsSection from './sections/PluginsSection.vue'
 import ShortcutsSection from './sections/ShortcutsSection.vue'
+import SyncSection from './sections/SyncSection.vue'
 
 const sections = [
   { id: 'general', label: '通用', hint: '搜索引擎与时钟的基础设置' },
   { id: 'appearance', label: '外观', hint: '主题切换、背景自定义与主题导入导出' },
   { id: 'widgets', label: '快捷方式', hint: '管理新标签页上的快捷方式磁贴' },
   { id: 'plugins', label: '插件市场', hint: '发现、安装与管理第三方插件' },
+  { id: 'sync', label: '同步', hint: 'GitHub 云端同步：多设备共享配置' },
   { id: 'about', label: '关于', hint: '版本与开源信息' },
 ] as const
 
@@ -32,6 +35,7 @@ watch(active, (to, from) => {
 
 const store = useConfigStore()
 useTheme() // 设置页同样应用主题变量（配置变化/跨页同步自动联动）
+useAutoPush() // 绑定自动推送后，配置落盘即同步云端
 const activeSection = computed(() => sections.find((s) => s.id === active.value))
 
 const saveLabel = computed(() => {
@@ -91,6 +95,7 @@ onBeforeUnmount(() => {
           <AppearanceSection v-else-if="active === 'appearance'" />
           <ShortcutsSection v-else-if="active === 'widgets'" />
           <PluginsSection v-else-if="active === 'plugins'" />
+          <SyncSection v-else-if="active === 'sync'" />
 
           <div v-else-if="active === 'about'" class="card">
             <dl class="facts">
