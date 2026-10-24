@@ -170,7 +170,7 @@ function onInteract(e: PointerEvent, slot: Slot, handle?: Handle): void {
 
 function addWidget(type: string): void {
   const constraints = constraintsOf(type)
-  const pos = findAddPosition(store.config.slots)
+  const pos = findAddPosition(store.config.slots, constraints.defaultW, constraints.defaultH)
   const slot: Slot = {
     id: `slot-${type}-${newId().slice(0, 8)}`,
     widget: type,

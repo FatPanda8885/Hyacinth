@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { reactive } from 'vue'
 
 import type { HostToPlugin } from '@/plugin-sdk/protocol'
 
@@ -106,6 +107,18 @@ describe('PluginHostController', () => {
     for (const r of sent.filter((m) => m.type === 'rpc-result')) {
       expect(r).toMatchObject({ ok: false })
     }
+  })
+
+  it('storage.get 返回响应式 Proxy 时回包可被 structuredClone', async () => {
+    // 复刻真实故障：插件存储从 Pinia 响应式 store 读出，直接 postMessage 会 DataCloneError
+    const proxied = reactive({ text: '你好', from: '测试' })
+    const { host, sent } = setup(['storage'], { storageGet: async () => proxied })
+    host.onMessage({ v: 1, type: 'hello', protocol: 1 })
+    host.onMessage({ v: 1, type: 'rpc', id: 'px1', method: 'storage.get', params: { key: 'last' } })
+    await vi.waitFor(() => expect(sent.some((m) => m.type === 'rpc-result')).toBe(true))
+    const reply = sent.find((m) => m.type === 'rpc-result')!
+    expect(() => structuredClone(reply)).not.toThrow()
+    expect(reply).toMatchObject({ ok: true, result: { text: '你好', from: '测试' } })
   })
 
   it('pushTheme 仅在握手后生效', () => {

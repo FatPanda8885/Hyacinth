@@ -25,6 +25,16 @@ export interface HostServices {
   proxyFetch(url: string): Promise<unknown>
 }
 
+/** 把 RPC 结果压成可 structuredClone 的纯数据（存储值可能来自响应式 store 的 Proxy） */
+function toCloneable(value: unknown): unknown {
+  if (value === undefined) return undefined
+  try {
+    return JSON.parse(JSON.stringify(value))
+  } catch {
+    return null
+  }
+}
+
 export interface PluginHostOptions {
   pluginId: string
   permissions: string[]
@@ -61,7 +71,7 @@ export class PluginHostController {
         protocol: PROTOCOL_VERSION,
         payload: {
           permissions: [...this.opts.permissions],
-          theme: this.opts.services.getTheme(),
+          theme: toCloneable(this.opts.services.getTheme()) as Record<string, string>,
         },
       })
       return
@@ -85,25 +95,35 @@ export class PluginHostController {
 
     try {
       const s = this.opts.services
+      let result: unknown
       switch (req.method) {
         case 'storage.get':
-          return this.opts.post(rpcOk(id, await s.storageGet(req.params.key)))
+          result = await s.storageGet(req.params.key)
+          break
         case 'storage.set':
           await s.storageSet(req.params.key, req.params.value)
-          return this.opts.post(rpcOk(id, true))
+          result = true
+          break
         case 'storage.remove':
           await s.storageRemove(req.params.key)
-          return this.opts.post(rpcOk(id, true))
+          result = true
+          break
         case 'theme.get':
-          return this.opts.post(rpcOk(id, s.getTheme()))
+          result = s.getTheme()
+          break
         case 'layout.resize':
-          return this.opts.post(rpcOk(id, await s.resizeSlot(req.params.w, req.params.h)))
+          result = await s.resizeSlot(req.params.w, req.params.h)
+          break
         case 'settings.open':
           s.openSettings()
-          return this.opts.post(rpcOk(id, true))
+          result = true
+          break
         case 'fetch':
-          return this.opts.post(rpcOk(id, await s.proxyFetch(req.params.url)))
+          result = await s.proxyFetch(req.params.url)
+          break
       }
+      // postMessage 走 structuredClone，Proxy 等不可克隆值必须先转纯数据
+      return this.opts.post(rpcOk(id, toCloneable(result)))
     } catch (err) {
       return fail(err instanceof Error ? err.message : String(err))
     }
