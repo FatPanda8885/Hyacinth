@@ -12,3 +12,11 @@ export function getExtensionVersion(): string {
   }
   return '0.0.0-dev'
 }
+
+/** 扩展内资源路径 → 可访问 URL（开发模式用 dev server 根路径） */
+export function extensionUrl(path: string): string {
+  if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
+    return chrome.runtime.getURL(path)
+  }
+  return new URL(`/${path.replace(/^\//, '')}`, location.origin).toString()
+}

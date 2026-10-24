@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Hyacinth · 一言</title>
+    <style>
+      :root {
+        --hy-on-bg: #ffffff;
+        --hy-on-bg-muted: rgba(255, 255, 255, 0.72);
+        --hy-accent: #8b7cf8;
+        --hy-glass-hover: rgba(255, 255, 255, 0.12);
+      }
+      body {
+        margin: 0;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: system-ui, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        color: var(--hy-on-bg);
+      }
+      .quote {
+        max-width: 340px;
+        padding: 12px 16px;
+        text-align: center;
+      }
+      .text {
+        font-size: 15px;
+        line-height: 1.7;
+        min-height: 3.4em;
+      }
+      .from {
+        margin-top: 6px;
+        font-size: 12px;
+        color: var(--hy-on-bg-muted);
+      }
+      .refresh {
+        margin-top: 12px;
+        padding: 5px 14px;
+        border-radius: 999px;
+        border: 1px solid var(--hy-glass-hover);
+        background: transparent;
+        color: var(--hy-on-bg-muted);
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .refresh:hover {
+        color: var(--hy-accent);
+      }
+      .refresh:disabled {
+        opacity: 0.5;
+        cursor: wait;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="quote">
+      <div class="text" id="text">正在取一句话…</div>
+      <div class="from" id="from"></div>
+      <button class="refresh" id="refresh">换一句</button>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
