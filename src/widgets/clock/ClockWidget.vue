@@ -105,7 +105,7 @@ const dateText = computed(() => formatDateZh(now.value))
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  color: #fff;
+  color: var(--hy-on-bg);
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
 
@@ -126,7 +126,7 @@ const dateText = computed(() => formatDateZh(now.value))
 .suffix {
   font-size: 18px;
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--hy-on-bg-muted);
 }
 
 .analog {
@@ -135,23 +135,26 @@ const dateText = computed(() => formatDateZh(now.value))
 }
 
 .face {
-  fill: rgba(16, 16, 20, 0.45);
-  stroke: rgba(255, 255, 255, 0.28);
+  fill: var(--hy-glass);
+  stroke: var(--hy-on-bg);
+  stroke-opacity: 0.3;
   stroke-width: 1.5;
 }
 
 .tick {
-  stroke: rgba(255, 255, 255, 0.4);
+  stroke: var(--hy-on-bg);
+  stroke-opacity: 0.45;
   stroke-width: 1;
 }
 
 .tick.major {
-  stroke: rgba(255, 255, 255, 0.8);
+  stroke: var(--hy-on-bg);
+  stroke-opacity: 0.85;
   stroke-width: 1.8;
 }
 
 .hand {
-  stroke: #fff;
+  stroke: var(--hy-on-bg);
   stroke-linecap: round;
 }
 
@@ -175,7 +178,7 @@ const dateText = computed(() => formatDateZh(now.value))
 .date {
   margin: 0;
   font-size: 17px;
-  color: rgba(255, 255, 255, 0.82);
+  color: var(--hy-on-bg-muted);
   letter-spacing: 0.06em;
 }
 </style>

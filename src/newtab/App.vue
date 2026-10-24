@@ -3,12 +3,14 @@ import { computed, onMounted } from 'vue'
 
 import { openOptionsPage } from '@/platform/runtime'
 import { useConfigStore } from '@/stores/config'
-import { backgroundStyleFor } from '@/widgets/background'
+import { themeBackgroundStyle } from '@/themes/apply'
+import { useTheme } from '@/themes/useTheme'
 
 import CanvasStage from './components/CanvasStage.vue'
 
 const store = useConfigStore()
-const bgStyle = computed(() => backgroundStyleFor(store.config.widgets.background))
+const theme = useTheme()
+const bgStyle = computed(() => themeBackgroundStyle(theme.value.background))
 
 onMounted(() => void store.init())
 </script>
@@ -60,8 +62,8 @@ onMounted(() => void store.init())
   place-items: center;
   border: none;
   border-radius: 50%;
-  background: rgba(16, 16, 20, 0.45);
-  color: rgba(255, 255, 255, 0.6);
+  background: var(--hy-glass);
+  color: var(--hy-on-bg-muted);
   cursor: pointer;
   opacity: 0.4;
   transition:
@@ -73,6 +75,6 @@ onMounted(() => void store.init())
 .settings:hover,
 .settings:focus-visible {
   opacity: 1;
-  color: #fff;
+  color: var(--hy-on-bg);
 }
 </style>

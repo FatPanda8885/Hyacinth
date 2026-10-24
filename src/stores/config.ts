@@ -2,8 +2,8 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 import { CONFIG_KEY, configStorage, onStorageChange } from '@/platform/storage'
-import { DEFAULT_CONFIG, migrate } from '@/shared/config'
-import type { HyacinthConfig, Slot } from '@/shared/types'
+import { DEFAULT_CONFIG, DEFAULT_THEME_ID, migrate } from '@/shared/config'
+import type { HyacinthConfig, Slot, ThemeBackground, ThemeDefinition } from '@/shared/types'
 
 export type SaveState = 'idle' | 'pending' | 'saved'
 
@@ -64,6 +64,39 @@ export const useConfigStore = defineStore('config', () => {
     scheduleSave()
   }
 
+  /** 切换主题 */
+  function setThemeId(id: string): void {
+    config.value.theme.id = id
+    scheduleSave()
+  }
+
+  /** 设置/清除用户背景覆盖（undefined = 跟随主题自带背景） */
+  function setBackgroundOverride(bg: ThemeBackground | undefined): void {
+    if (bg) {
+      config.value.theme.background = bg
+    } else {
+      delete config.value.theme.background
+    }
+    scheduleSave()
+  }
+
+  /** 新增/替换自定义主题（同 id 覆盖） */
+  function upsertCustomTheme(theme: ThemeDefinition): void {
+    config.value.customThemes = [
+      ...config.value.customThemes.filter((t) => t.id !== theme.id),
+      theme,
+    ]
+    scheduleSave()
+  }
+
+  function removeCustomTheme(id: string): void {
+    if (config.value.theme.id === id) {
+      config.value.theme.id = DEFAULT_THEME_ID
+    }
+    config.value.customThemes = config.value.customThemes.filter((t) => t.id !== id)
+    scheduleSave()
+  }
+
   function scheduleSave(): void {
     savePending = true
     saveState.value = 'pending'
@@ -93,6 +126,10 @@ export const useConfigStore = defineStore('config', () => {
     updateWidget,
     resetWidget,
     setSlots,
+    setThemeId,
+    setBackgroundOverride,
+    upsertCustomTheme,
+    removeCustomTheme,
     flush,
   }
 })
