@@ -24,14 +24,22 @@ function go(): void {
 }
 
 // ---- 自定义引擎下拉（原生 select 无法定制下拉面板样式） ----
+// 菜单与遮罩 Teleport 到 body：挂件槽位有 overflow:hidden 会裁掉向下展开的
+// 菜单；且 .search 的 backdrop-filter 会把内部 fixed 元素的包含块变成胶囊自身。
 const open = ref(false)
 const highlight = ref(0)
+const buttonRef = ref<HTMLElement | null>(null)
+const menuPos = ref({ left: 0, top: 0 })
 
 function toggle(): void {
   if (open.value) {
     open.value = false
   } else {
     highlight.value = SEARCH_ENGINES.findIndex((e) => e.id === engine.value.id)
+    const rect = buttonRef.value?.getBoundingClientRect()
+    menuPos.value = rect
+      ? { left: rect.left, top: Math.round(rect.bottom + 8) }
+      : { left: 0, top: 0 }
     open.value = true
   }
 }
@@ -62,6 +70,7 @@ function chooseHighlighted(): void {
       @keydown.enter.prevent="chooseHighlighted"
     >
       <button
+        ref="buttonRef"
         type="button"
         class="engine"
         aria-haspopup="listbox"
@@ -82,8 +91,17 @@ function chooseHighlighted(): void {
           <path d="M2.5 4.5 6 8l3.5-3.5" />
         </svg>
       </button>
+    </div>
 
-      <ul v-if="open" class="menu" role="listbox" aria-label="搜索引擎">
+    <Teleport to="body">
+      <div v-if="open" class="backdrop" aria-hidden="true" @click="open = false"></div>
+      <ul
+        v-if="open"
+        class="menu"
+        :style="{ left: `${menuPos.left}px`, top: `${menuPos.top}px` }"
+        role="listbox"
+        aria-label="搜索引擎"
+      >
         <li
           v-for="(e, i) in SEARCH_ENGINES"
           :key="e.id"
@@ -96,9 +114,7 @@ function chooseHighlighted(): void {
           <span v-if="e.id === engine.id" class="check">✓</span>
         </li>
       </ul>
-    </div>
-
-    <div v-if="open" class="backdrop" aria-hidden="true" @click="open = false"></div>
+    </Teleport>
 
     <input
       v-model="query"
@@ -118,7 +134,8 @@ function chooseHighlighted(): void {
   display: flex;
   align-items: center;
   gap: 10px;
-  width: min(560px, 86vw);
+  width: 100%;
+  max-width: 560px;
   padding: 6px 6px 6px 8px;
   border-radius: 999px;
   background: rgba(16, 16, 20, 0.55);
@@ -164,9 +181,7 @@ function chooseHighlighted(): void {
 }
 
 .menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
+  position: fixed;
   min-width: 132px;
   margin: 0;
   padding: 6px;
@@ -176,7 +191,7 @@ function chooseHighlighted(): void {
   border: 1px solid rgba(255, 255, 255, 0.14);
   backdrop-filter: blur(18px);
   box-shadow: 0 10px 32px rgba(0, 0, 0, 0.4);
-  z-index: 100;
+  z-index: 10000;
 }
 
 .menu li {
@@ -203,7 +218,7 @@ function chooseHighlighted(): void {
 .backdrop {
   position: fixed;
   inset: 0;
-  z-index: 90;
+  z-index: 9999;
 }
 
 .input {

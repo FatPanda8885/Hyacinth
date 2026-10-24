@@ -1,6 +1,30 @@
 import { describe, expect, it } from 'vitest'
 
-import { hostOf, hueOf, normalizeUrl, tileColor, tileLabel } from './model'
+import { hostOf, hueOf, moveItem, normalizeUrl, tileColor, tileLabel } from './model'
+
+describe('moveItem（排序）', () => {
+  it('向后移动', () => {
+    expect(moveItem(['a', 'b', 'c', 'd'], 0, 2)).toEqual(['b', 'c', 'a', 'd'])
+  })
+
+  it('向前移动', () => {
+    expect(moveItem(['a', 'b', 'c', 'd'], 3, 1)).toEqual(['a', 'd', 'b', 'c'])
+  })
+
+  it('相同下标与越界原样返回', () => {
+    const list = ['a', 'b']
+    expect(moveItem(list, 1, 1)).toBe(list)
+    expect(moveItem(list, -1, 0)).toBe(list)
+    expect(moveItem(list, 0, 5)).toBe(list)
+    expect(moveItem(list, 5, 0)).toBe(list)
+  })
+
+  it('不改动原数组', () => {
+    const list = ['a', 'b', 'c']
+    moveItem(list, 0, 2)
+    expect(list).toEqual(['a', 'b', 'c'])
+  })
+})
 
 describe('shortcuts', () => {
   it('normalizeUrl 给裸域名补 https 协议', () => {

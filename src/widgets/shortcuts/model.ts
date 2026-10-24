@@ -23,6 +23,17 @@ export function newId(): string {
   return crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)
 }
 
+/** 数组元素移动（列表拖拽排序与上下移按钮共用），非法下标原样返回 */
+export function moveItem<T>(list: T[], from: number, to: number): T[] {
+  if (from === to || from < 0 || to < 0 || from >= list.length || to >= list.length) {
+    return list
+  }
+  const next = [...list]
+  const [item] = next.splice(from, 1)
+  next.splice(to, 0, item)
+  return next
+}
+
 /** 用户输入补全协议：无协议时默认 https:// */
 export function normalizeUrl(input: string): string {
   const trimmed = input.trim()
