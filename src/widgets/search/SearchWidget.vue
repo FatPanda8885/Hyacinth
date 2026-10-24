@@ -22,13 +22,84 @@ function go(): void {
   if (!q) return
   window.location.href = engine.value.buildUrl(q)
 }
+
+// ---- 自定义引擎下拉（原生 select 无法定制下拉面板样式） ----
+const open = ref(false)
+const highlight = ref(0)
+
+function toggle(): void {
+  if (open.value) {
+    open.value = false
+  } else {
+    highlight.value = SEARCH_ENGINES.findIndex((e) => e.id === engine.value.id)
+    open.value = true
+  }
+}
+
+function choose(id: string): void {
+  engineId.value = id
+  open.value = false
+}
+
+function move(delta: number): void {
+  if (!open.value) toggle()
+  const n = SEARCH_ENGINES.length
+  highlight.value = (highlight.value + delta + n) % n
+}
+
+function chooseHighlighted(): void {
+  if (open.value) choose(SEARCH_ENGINES[highlight.value].id)
+}
 </script>
 
 <template>
   <form class="search" @submit.prevent="go">
-    <select v-model="engineId" class="engine" aria-label="搜索引擎">
-      <option v-for="e in SEARCH_ENGINES" :key="e.id" :value="e.id">{{ e.name }}</option>
-    </select>
+    <div
+      class="picker"
+      @keydown.esc="open = false"
+      @keydown.down.prevent="move(1)"
+      @keydown.up.prevent="move(-1)"
+      @keydown.enter.prevent="chooseHighlighted"
+    >
+      <button
+        type="button"
+        class="engine"
+        aria-haspopup="listbox"
+        :aria-expanded="open"
+        @click="toggle"
+      >
+        <span>{{ engine.name }}</span>
+        <svg
+          class="caret"
+          viewBox="0 0 12 12"
+          width="10"
+          height="10"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+          aria-hidden="true"
+        >
+          <path d="M2.5 4.5 6 8l3.5-3.5" />
+        </svg>
+      </button>
+
+      <ul v-if="open" class="menu" role="listbox" aria-label="搜索引擎">
+        <li
+          v-for="(e, i) in SEARCH_ENGINES"
+          :key="e.id"
+          role="option"
+          :aria-selected="e.id === engine.id"
+          :class="{ active: e.id === engine.id, hover: i === highlight }"
+          @click="choose(e.id)"
+        >
+          <span>{{ e.name }}</span>
+          <span v-if="e.id === engine.id" class="check">✓</span>
+        </li>
+      </ul>
+    </div>
+
+    <div v-if="open" class="backdrop" aria-hidden="true" @click="open = false"></div>
+
     <input
       v-model="query"
       class="input"
@@ -43,11 +114,12 @@ function go(): void {
 
 <style scoped>
 .search {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
   width: min(560px, 86vw);
-  padding: 6px 6px 6px 10px;
+  padding: 6px 6px 6px 8px;
   border-radius: 999px;
   background: rgba(16, 16, 20, 0.55);
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -60,20 +132,78 @@ function go(): void {
   border-color: var(--hy-accent);
 }
 
+.picker {
+  position: relative;
+}
+
 .engine {
-  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 66px;
+  padding: 6px 10px;
   border: none;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
   font-size: 13px;
-  padding: 6px 10px;
   cursor: pointer;
-  outline: none;
+  transition: background 0.15s ease;
 }
 
-.engine option {
-  color: #111;
+.engine:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.caret {
+  transition: transform 0.15s ease;
+}
+
+.engine[aria-expanded='true'] .caret {
+  transform: rotate(180deg);
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 132px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border-radius: 12px;
+  background: rgba(16, 16, 20, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+}
+
+.menu li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+}
+
+.menu li.hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.menu li.active,
+.menu li.active .check {
+  color: var(--hy-accent);
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
 }
 
 .input {
