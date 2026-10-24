@@ -1,26 +1,49 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { getExtensionVersion } from '@/platform/runtime'
 import { useConfigStore } from '@/stores/config'
 
+import AppearanceSection from './sections/AppearanceSection.vue'
+import GeneralSection from './sections/GeneralSection.vue'
+import ShortcutsSection from './sections/ShortcutsSection.vue'
+
 const sections = [
-  { id: 'general', label: '通用', hint: '语言、默认搜索引擎等基础项' },
-  { id: 'appearance', label: '外观', hint: '主题管理与背景设置' },
-  { id: 'widgets', label: '挂件', hint: '挂件与画布布局管理' },
+  { id: 'general', label: '通用', hint: '搜索引擎与时钟的基础设置' },
+  { id: 'appearance', label: '外观', hint: '背景设置（完整主题系统见 M3）' },
+  { id: 'widgets', label: '快捷方式', hint: '管理新标签页上的快捷方式磁贴' },
   { id: 'plugins', label: '插件市场', hint: '发现、安装与管理第三方插件' },
   { id: 'about', label: '关于', hint: '版本与开源信息' },
 ] as const
 
 type SectionId = (typeof sections)[number]['id']
-
-const active = ref<SectionId>('about')
+const active = ref<SectionId>('general')
 const version = getExtensionVersion()
 
 const store = useConfigStore()
-onMounted(() => void store.load())
-
 const activeSection = computed(() => sections.find((s) => s.id === active.value))
+
+const saveLabel = computed(() => {
+  if (store.saveState === 'pending') return '保存中…'
+  if (store.saveState === 'saved') return '已保存'
+  return ''
+})
+
+// 防抖写盘期间页面被关闭，尽量补一次落盘
+function flushSoon(): void {
+  void store.flush()
+}
+
+onMounted(() => {
+  void store.init()
+  window.addEventListener('beforeunload', flushSoon)
+  document.addEventListener('visibilitychange', flushSoon)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', flushSoon)
+  document.removeEventListener('visibilitychange', flushSoon)
+})
 </script>
 
 <template>
@@ -41,14 +64,24 @@ const activeSection = computed(() => sections.find((s) => s.id === active.value)
           {{ s.label }}
         </button>
       </nav>
-      <footer class="meta">v{{ version }}</footer>
+      <footer class="meta">
+        <span>v{{ version }}</span>
+        <span class="save" :class="store.saveState">{{ saveLabel }}</span>
+      </footer>
     </aside>
 
     <main class="panel">
       <h1>{{ activeSection?.label }}</h1>
       <p class="hint">{{ activeSection?.hint }}</p>
 
-      <div v-if="active === 'about'" class="card">
+      <GeneralSection v-if="active === 'general'" />
+      <AppearanceSection v-else-if="active === 'appearance'" />
+      <ShortcutsSection v-else-if="active === 'widgets'" />
+      <div v-else-if="active === 'plugins'" class="card placeholder">
+        建设中 · 插件市场对应路线图 M5
+      </div>
+
+      <div v-else-if="active === 'about'" class="card">
         <dl class="facts">
           <dt>版本</dt>
           <dd>v{{ version }}</dd>
@@ -59,7 +92,6 @@ const activeSection = computed(() => sections.find((s) => s.id === active.value)
         </dl>
         <p class="note">Hyacinth 是开源项目（MIT License），主题与插件生态建设中。</p>
       </div>
-      <div v-else class="card placeholder">建设中 · 对应路线图 M1+ 里程碑</div>
     </main>
   </div>
 </template>
@@ -111,11 +143,7 @@ const activeSection = computed(() => sections.find((s) => s.id === active.value)
   cursor: pointer;
 }
 
-.nav button:hover {
-  color: var(--hy-fg);
-  background: var(--hy-accent-soft);
-}
-
+.nav button:hover,
 .nav button.active {
   color: var(--hy-fg);
   background: var(--hy-accent-soft);
@@ -126,11 +154,19 @@ const activeSection = computed(() => sections.find((s) => s.id === active.value)
   padding: 10px;
   color: var(--hy-fg-muted);
   font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.save {
+  color: var(--hy-accent);
+  min-width: 3em;
+  text-align: right;
 }
 
 .panel {
   padding: 36px 44px;
-  max-width: 720px;
+  max-width: 760px;
 }
 
 .panel h1 {

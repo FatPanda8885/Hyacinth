@@ -1,96 +1,91 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 
 import { openOptionsPage } from '@/platform/runtime'
 import { useConfigStore } from '@/stores/config'
+import { backgroundStyleFor } from '@/widgets/background'
+import { getWidget } from '@/widgets'
+
+/** M1 固定纵向布局；M2 起挂件顺序与位置由画布槽位（config.slots）决定 */
+const WIDGET_ORDER = ['clock', 'search', 'shortcuts']
 
 const store = useConfigStore()
-onMounted(() => void store.load())
+const bgStyle = computed(() => backgroundStyleFor(store.config.widgets.background))
+
+onMounted(() => void store.init())
 </script>
 
 <template>
-  <main class="shell">
-    <div class="mark" aria-hidden="true">❧</div>
-    <h1 class="title">Hyacinth</h1>
-    <p class="tagline">简洁、高度可定制的新标签页</p>
-    <p class="status" :class="{ ready: store.loaded }">
-      {{ store.loaded ? `配置已加载 · schema v${store.config.schemaVersion}` : '正在加载配置…' }}
-    </p>
-    <button class="ghost" type="button" @click="openOptionsPage">打开设置</button>
-    <footer class="foot">M0 脚手架 · 画布布局 / 主题 / 插件系统建设中</footer>
+  <div class="bg" :style="bgStyle" aria-hidden="true"></div>
+
+  <main class="stage">
+    <component :is="getWidget(type)?.component" v-for="type in WIDGET_ORDER" :key="type" />
   </main>
+
+  <button
+    class="settings"
+    type="button"
+    title="打开设置"
+    aria-label="打开设置"
+    @click="openOptionsPage"
+  >
+    <svg
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.8"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="3.2" />
+      <path
+        d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1.11-1.56 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.65 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.08a1.7 1.7 0 0 0 1.03-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1.03 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.08a1.7 1.7 0 0 0 1.56 1.03H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.56 1.03z"
+      />
+    </svg>
+  </button>
 </template>
 
 <style scoped>
-.shell {
-  position: relative;
+.bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  transition: background 0.4s ease;
+}
+
+.stage {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 42px;
+  padding-bottom: 6vh;
 }
 
-.mark {
-  width: 72px;
-  height: 72px;
-  border-radius: 20px;
+.settings {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  width: 38px;
+  height: 38px;
   display: grid;
   place-items: center;
-  font-size: 40px;
-  color: #fff;
-  background: linear-gradient(180deg, var(--hy-accent) 0%, #4c3fd2 100%);
-}
-
-.title {
-  margin: 0;
-  font-size: 28px;
-  letter-spacing: 0.12em;
-}
-
-.tagline {
-  margin: 0;
-  color: var(--hy-fg-muted);
-}
-
-.status {
-  margin: 0;
-  padding: 4px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--hy-border);
-  color: var(--hy-fg-muted);
-  font-size: 13px;
-}
-
-.status.ready {
-  color: var(--hy-accent);
-  border-color: var(--hy-accent-soft);
-  background: var(--hy-accent-soft);
-}
-
-.ghost {
-  margin-top: 8px;
-  padding: 8px 22px;
-  border-radius: var(--hy-radius);
-  border: 1px solid var(--hy-border);
-  background: var(--hy-bg-soft);
-  color: var(--hy-fg);
-  font-size: 14px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(16, 16, 20, 0.45);
+  color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
+  opacity: 0.4;
   transition:
-    border-color 0.15s ease,
-    background 0.15s ease;
+    opacity 0.15s ease,
+    color 0.15s ease;
 }
 
-.ghost:hover {
-  border-color: var(--hy-accent);
-}
-
-.foot {
-  position: absolute;
-  bottom: 20px;
-  color: var(--hy-fg-muted);
-  font-size: 12px;
+.settings:hover,
+.settings:focus-visible {
+  opacity: 1;
+  color: #fff;
 }
 </style>
