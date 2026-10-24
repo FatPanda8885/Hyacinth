@@ -3,7 +3,34 @@ import { describe, expect, it } from 'vitest'
 import type { ThemeDefinition } from '@/shared/types'
 
 import { BUILTIN_THEMES } from './builtin'
-import { findTheme, resolveTheme, sanitizeVariables, validateTheme } from './apply'
+import {
+  DEFAULT_EFFECTS,
+  findTheme,
+  normalizeEffects,
+  resolveTheme,
+  sanitizeVariables,
+  validateTheme,
+} from './apply'
+
+describe('normalizeEffects', () => {
+  it('合法值取整保留', () => {
+    expect(normalizeEffects({ blur: 12.4, brightness: 88.6 })).toEqual({
+      blur: 12,
+      brightness: 89,
+    })
+  })
+
+  it('越界值钳制到区间', () => {
+    expect(normalizeEffects({ blur: 999, brightness: 1 })).toEqual({ blur: 40, brightness: 40 })
+    expect(normalizeEffects({ blur: -5, brightness: 999 })).toEqual({ blur: 0, brightness: 150 })
+  })
+
+  it('非法输入回落默认', () => {
+    expect(normalizeEffects(null)).toEqual({ ...DEFAULT_EFFECTS })
+    expect(normalizeEffects({ blur: 'x', brightness: 'y' })).toEqual({ ...DEFAULT_EFFECTS })
+    expect(normalizeEffects({})).toEqual({ ...DEFAULT_EFFECTS })
+  })
+})
 
 const night = BUILTIN_THEMES[0]
 

@@ -9,13 +9,13 @@ import { useTheme } from '@/themes/useTheme'
 import CanvasStage from './components/CanvasStage.vue'
 
 const store = useConfigStore()
-const theme = useTheme()
+const { theme, effects } = useTheme()
 
 onMounted(() => void store.init())
 </script>
 
 <template>
-  <BackgroundLayer :background="theme.background" viewport />
+  <BackgroundLayer :background="theme.background" :effects="effects" viewport />
 
   <CanvasStage />
 

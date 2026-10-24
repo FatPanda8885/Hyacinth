@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { getAsset } from '@/platform/assetStore'
-import type { ThemeBackground } from '@/shared/types'
+import type { BackgroundEffects, ThemeBackground } from '@/shared/types'
 import {
   BACKGROUND_DEFAULTS,
   assetRefToId,
@@ -10,8 +10,12 @@ import {
   isAssetRef,
 } from '@/widgets/background'
 
+import { normalizeEffects } from './apply'
+
 const props = defineProps<{
   background: ThemeBackground
+  /** 背景显示效果（模糊/亮度） */
+  effects?: BackgroundEffects
   /** true = fixed 铺满视口（新标签页）；缺省 = 填充定位父级（设置页预览） */
   viewport?: boolean
 }>()
@@ -23,6 +27,18 @@ const style = ref<{ background: string; backgroundColor: string }>(
 
 let objectUrl: string | null = null
 let requestSeq = 0
+
+const eff = computed(() => normalizeEffects(props.effects))
+
+/**
+ * 内衬层样式：模糊会让边缘露出透明，按 blur 半径外扩 inset（约 3 倍扩散），
+ * 外层 overflow:hidden 裁剪，任何模糊度下都铺满不留边。
+ */
+const innerStyle = computed(() => ({
+  ...style.value,
+  inset: `${-eff.value.blur * 3}px`,
+  filter: `blur(${eff.value.blur}px) brightness(${eff.value.brightness}%)`,
+}))
 
 async function resolve(bg: ThemeBackground): Promise<void> {
   const seq = ++requestSeq
@@ -70,7 +86,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="bg" :class="{ viewport }" :style="style" aria-hidden="true"></div>
+  <div class="bg" :class="{ viewport }" aria-hidden="true">
+    <div class="inner" :style="innerStyle"></div>
+  </div>
 </template>
 
 <style scoped>
@@ -78,11 +96,15 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  transition: background 0.4s ease;
 }
 
 .bg.viewport {
   position: fixed;
   z-index: -1;
+}
+
+.inner {
+  position: absolute;
+  transition: filter 0.15s ease;
 }
 </style>

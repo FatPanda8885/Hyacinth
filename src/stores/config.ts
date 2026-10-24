@@ -3,7 +3,13 @@ import { ref } from 'vue'
 
 import { CONFIG_KEY, configStorage, onStorageChange } from '@/platform/storage'
 import { DEFAULT_CONFIG, DEFAULT_THEME_ID, migrate } from '@/shared/config'
-import type { HyacinthConfig, Slot, ThemeBackground, ThemeDefinition } from '@/shared/types'
+import type {
+  BackgroundEffects,
+  HyacinthConfig,
+  Slot,
+  ThemeBackground,
+  ThemeDefinition,
+} from '@/shared/types'
 
 export type SaveState = 'idle' | 'pending' | 'saved'
 
@@ -80,6 +86,16 @@ export const useConfigStore = defineStore('config', () => {
     scheduleSave()
   }
 
+  /** 设置背景显示效果（undefined = 恢复默认） */
+  function setBackgroundEffects(effects: BackgroundEffects | undefined): void {
+    if (effects) {
+      config.value.theme.backgroundEffects = effects
+    } else {
+      delete config.value.theme.backgroundEffects
+    }
+    scheduleSave()
+  }
+
   /** 新增/替换自定义主题（同 id 覆盖） */
   function upsertCustomTheme(theme: ThemeDefinition): void {
     config.value.customThemes = [
@@ -128,6 +144,7 @@ export const useConfigStore = defineStore('config', () => {
     setSlots,
     setThemeId,
     setBackgroundOverride,
+    setBackgroundEffects,
     upsertCustomTheme,
     removeCustomTheme,
     flush,

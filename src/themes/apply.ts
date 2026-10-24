@@ -18,6 +18,23 @@ export function sanitizeVariables(raw: unknown): Record<string, string> {
   return out
 }
 
+export const DEFAULT_EFFECTS = { blur: 0, brightness: 100 } as const
+
+/** 背景效果清洗：数值钳制到合法区间，非法回落默认 */
+export function normalizeEffects(raw: unknown): { blur: number; brightness: number } {
+  const src = (typeof raw === 'object' && raw !== null ? raw : {}) as Record<string, unknown>
+  const blur = Number(src.blur)
+  const brightness = Number(src.brightness)
+  return {
+    blur: Number.isFinite(blur)
+      ? Math.min(40, Math.max(0, Math.round(blur)))
+      : DEFAULT_EFFECTS.blur,
+    brightness: Number.isFinite(brightness)
+      ? Math.min(150, Math.max(40, Math.round(brightness)))
+      : DEFAULT_EFFECTS.brightness,
+  }
+}
+
 export interface ResolvedTheme {
   /** 主题定义变量 + 用户覆盖合并后的最终变量集 */
   variables: Record<string, string>

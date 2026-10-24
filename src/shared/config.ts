@@ -1,5 +1,5 @@
 import { normalizeSlots } from '@/core/layout/slots'
-import { sanitizeVariables } from '@/themes/apply'
+import { normalizeEffects, sanitizeVariables } from '@/themes/apply'
 
 import type { HyacinthConfig, Slot, ThemeBackground } from './types'
 import { SCHEMA_VERSION } from './types'
@@ -72,6 +72,7 @@ export function migrate(raw: unknown): HyacinthConfig {
             : DEFAULT_THEME_ID,
       variables: sanitizeVariables(data.theme?.variables),
       ...(background ? { background } : {}),
+      backgroundEffects: normalizeEffects(data.theme?.backgroundEffects),
     },
     customThemes: Array.isArray(data.customThemes)
       ? data.customThemes.filter((t) => typeof t?.id === 'string' && typeof t?.name === 'string')

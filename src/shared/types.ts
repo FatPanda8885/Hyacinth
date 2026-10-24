@@ -36,6 +36,15 @@ export type ThemeConfig = {
   variables: Record<string, string>
   /** 用户自定义背景；未设置时用主题自带背景 */
   background?: ThemeBackground
+  /** 背景显示效果（模糊/亮度），属于用户偏好不随主题文件分发 */
+  backgroundEffects?: BackgroundEffects
+}
+
+export type BackgroundEffects = {
+  /** 高斯模糊半径 px，0-40 */
+  blur: number
+  /** 亮度百分比，100 = 原样，40-150 */
+  brightness: number
 }
 
 /** 已安装插件（M4+ 使用） */

@@ -5,7 +5,7 @@ import { useConfigStore } from '@/stores/config'
 import { deleteAsset, putAsset } from '@/platform/assetStore'
 import type { ThemeBackground, ThemeDefinition } from '@/shared/types'
 import { BUILTIN_THEMES } from '@/themes/builtin'
-import { exportTheme, findTheme, validateTheme } from '@/themes/apply'
+import { exportTheme, findTheme, normalizeEffects, validateTheme } from '@/themes/apply'
 import BackgroundLayer from '@/themes/BackgroundLayer.vue'
 import { useTheme } from '@/themes/useTheme'
 import { normalizeUrl } from '@/widgets/shortcuts'
@@ -20,7 +20,22 @@ import {
 } from '@/widgets/background'
 
 const store = useConfigStore()
-const theme = useTheme() // 本页实时预览主题应用效果
+const { theme, effects } = useTheme() // 本页实时预览主题应用效果
+
+// ---- 背景效果（模糊/亮度，实时预览） ----
+const blurModel = computed({
+  get: () => effects.value.blur,
+  set: (v: number) => setEffects({ blur: v, brightness: brightnessModel.value }),
+})
+const brightnessModel = computed({
+  get: () => effects.value.brightness,
+  set: (v: number) => setEffects({ blur: blurModel.value, brightness: v }),
+})
+
+function setEffects(next: { blur: number; brightness: number }): void {
+  const { blur, brightness } = normalizeEffects(next)
+  store.setBackgroundEffects(blur === 0 && brightness === 100 ? undefined : { blur, brightness })
+}
 
 const allThemes = computed<ThemeDefinition[]>(() => [
   ...BUILTIN_THEMES,
@@ -260,6 +275,39 @@ function onImportFile(event: Event): void {
       </div>
     </div>
 
+    <!-- 背景效果 -->
+    <div class="row wrap">
+      <span>背景效果</span>
+      <div class="fx">
+        <label class="fx-item">
+          <span>模糊</span>
+          <input
+            v-model.number="blurModel"
+            class="fx-input"
+            type="number"
+            min="0"
+            max="40"
+            step="1"
+            aria-label="背景模糊度（像素）"
+          />
+          <span class="unit">px</span>
+        </label>
+        <label class="fx-item">
+          <span>亮度</span>
+          <input
+            v-model.number="brightnessModel"
+            class="fx-input"
+            type="number"
+            min="40"
+            max="150"
+            step="5"
+            aria-label="背景亮度（百分比）"
+          />
+          <span class="unit">%</span>
+        </label>
+      </div>
+    </div>
+
     <!-- 导入导出 -->
     <div class="row">
       <span>分享主题</span>
@@ -274,7 +322,7 @@ function onImportFile(event: Event): void {
     <p v-if="importError" class="error" role="alert">{{ importError }}</p>
 
     <div class="preview" aria-hidden="true">
-      <BackgroundLayer :background="theme.background" />
+      <BackgroundLayer :background="theme.background" :effects="effects" />
       <span>预览</span>
     </div>
   </div>
@@ -473,6 +521,42 @@ function onImportFile(event: Event): void {
   background: var(--hy-bg);
   color: var(--hy-fg);
   font-size: 13px;
+}
+
+/* 背景效果输入 */
+.fx {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.fx-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--hy-fg-muted);
+}
+
+.fx-input {
+  width: 72px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--hy-border);
+  background: var(--hy-bg);
+  color: var(--hy-fg);
+  font-size: 13px;
+  text-align: right;
+  outline: none;
+}
+
+.fx-input:focus {
+  border-color: var(--hy-accent);
+}
+
+.unit {
+  font-size: 12px;
+  color: var(--hy-fg-muted);
 }
 
 /* 导入导出 */
